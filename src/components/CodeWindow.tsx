@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Play, Maximize2, Minimize2, GripHorizontal, Eye, Code as CodeIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,7 @@ const LANGUAGES = {
 };
 
 const CodeWindow: React.FC<CodeWindowProps> = ({
-  window,
+  window: codeWindow,
   onUpdate,
   onBringToFront,
   onDelete
@@ -43,11 +42,11 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768 || 'ontouchstart' in window);
+      setIsMobile(globalThis.window.innerWidth <= 768 || 'ontouchstart' in globalThis.window);
     };
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    globalThis.window.addEventListener('resize', checkMobile);
+    return () => globalThis.window.removeEventListener('resize', checkMobile);
   }, []);
 
   const languageColors = {
@@ -65,8 +64,8 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     sql: 'border-blue-700 bg-blue-50'
   };
 
-  const languageColor = languageColors[window.language as keyof typeof languageColors] || 'border-gray-400 bg-gray-50';
-  const lang = LANGUAGES[window.language as keyof typeof LANGUAGES] || { name: window.language, color: '#666', icon: '📄' };
+  const languageColor = languageColors[codeWindow.language as keyof typeof languageColors] || 'border-gray-400 bg-gray-50';
+  const lang = LANGUAGES[codeWindow.language as keyof typeof LANGUAGES] || { name: codeWindow.language, color: '#666', icon: '📄' };
 
   const handleStart = useCallback((e: React.MouseEvent | React.TouchEvent, action: 'drag' | 'resize') => {
     e.preventDefault();
@@ -75,7 +74,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     
-    onBringToFront(window.id);
+    onBringToFront(codeWindow.id);
     
     if (action === 'drag') {
       setIsDragging(true);
@@ -89,7 +88,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     } else if (action === 'resize') {
       setIsResizing(true);
     }
-  }, [window.id, onBringToFront]);
+  }, [codeWindow.id, onBringToFront]);
 
   const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isDragging && !isResizing) return;
@@ -102,7 +101,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
       const newX = Math.max(0, clientX - dragOffset.x);
       const newY = Math.max(60, clientY - dragOffset.y);
       
-      onUpdate(window.id, {
+      onUpdate(codeWindow.id, {
         position: { x: newX, y: newY }
       });
     } else if (isResizing && windowRef.current) {
@@ -110,11 +109,11 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
       const newWidth = Math.max(isMobile ? 280 : 300, clientX - rect.left + 10);
       const newHeight = Math.max(200, clientY - rect.top + 10);
       
-      onUpdate(window.id, {
+      onUpdate(codeWindow.id, {
         size: { width: newWidth, height: newHeight }
       });
     }
-  }, [isDragging, isResizing, dragOffset, window.id, onUpdate, isMobile]);
+  }, [isDragging, isResizing, dragOffset, codeWindow.id, onUpdate, isMobile]);
 
   const handleEnd = useCallback(() => {
     setIsDragging(false);
@@ -138,15 +137,15 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
   }, [isDragging, isResizing, handleMove, handleEnd]);
 
   const handleCodeChange = useCallback((newCode: string) => {
-    onUpdate(window.id, { code: newCode });
-  }, [window.id, onUpdate]);
+    onUpdate(codeWindow.id, { code: newCode });
+  }, [codeWindow.id, onUpdate]);
 
   const handleRunCode = useCallback(() => {
-    console.log(`Running ${window.language} code:`, window.code);
-    if (['html', 'css', 'javascript'].includes(window.language)) {
+    console.log(`Running ${codeWindow.language} code:`, codeWindow.code);
+    if (['html', 'css', 'javascript'].includes(codeWindow.language)) {
       setShowPreview(true);
     }
-  }, [window.language, window.code]);
+  }, [codeWindow.language, codeWindow.code]);
 
   return (
     <div
@@ -155,11 +154,11 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
         isDragging ? 'cursor-grabbing shadow-2xl scale-105' : 'cursor-grab'
       } select-none overflow-hidden transition-all duration-200`}
       style={{
-        left: window.position.x,
-        top: window.position.y,
-        width: window.size.width,
-        height: window.size.height,
-        zIndex: window.zIndex,
+        left: codeWindow.position.x,
+        top: codeWindow.position.y,
+        width: codeWindow.size.width,
+        height: codeWindow.size.height,
+        zIndex: codeWindow.zIndex,
         touchAction: 'none'
       }}
     >
@@ -175,7 +174,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
             <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           </div>
-          <span className="text-sm font-medium text-gray-700 truncate">{window.title}</span>
+          <span className="text-sm font-medium text-gray-700 truncate">{codeWindow.title}</span>
           <span 
             className={`text-xs px-2 py-1 rounded text-white ${isMobile ? 'hidden' : ''}`}
             style={{ backgroundColor: lang.color }}
@@ -185,7 +184,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
         </div>
         
         <div className="flex items-center gap-1 flex-shrink-0">
-          {['javascript', 'python', 'html', 'css'].includes(window.language) && (
+          {['javascript', 'python', 'html', 'css'].includes(codeWindow.language) && (
             <Button
               size="sm"
               variant="ghost"
@@ -196,7 +195,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
             </Button>
           )}
           
-          {['html', 'css', 'javascript'].includes(window.language) && (
+          {['html', 'css', 'javascript'].includes(codeWindow.language) && (
             <Button
               size="sm"
               variant="ghost"
@@ -214,7 +213,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => onDelete(window.id)}
+            onClick={() => onDelete(codeWindow.id)}
             className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} p-0 hover:bg-red-100 touch-manipulation`}
           >
             <X className={`${isMobile ? 'w-4 h-4' : 'w-3 h-3'} text-red-600`} />
@@ -226,17 +225,17 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
       <div className="flex flex-col h-full">
         <div className={`flex-1 ${showPreview ? 'h-1/2' : 'h-full'}`}>
           <CodeEditor
-            language={window.language}
-            code={window.code}
+            language={codeWindow.language}
+            code={codeWindow.code}
             onChange={handleCodeChange}
           />
         </div>
         
-        {showPreview && ['html', 'css', 'javascript'].includes(window.language) && (
+        {showPreview && ['html', 'css', 'javascript'].includes(codeWindow.language) && (
           <div className="h-1/2 border-t border-gray-200">
             <CodePreview
-              language={window.language}
-              code={window.code}
+              language={codeWindow.language}
+              code={codeWindow.code}
             />
           </div>
         )}
