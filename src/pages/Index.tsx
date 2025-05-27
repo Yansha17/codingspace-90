@@ -1,48 +1,81 @@
-
-import React, { useState, useRef, useCallback } from 'react';
-import { Plus, Play, Code, Smartphone, Monitor } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { Plus, Play, Code, Smartphone, Monitor, Menu, ChevronDown, Settings, X, Eye, Move } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CodeWindow from '@/components/CodeWindow';
 import CanvasBackground from '@/components/CanvasBackground';
 import NewWindowDialog from '@/components/NewWindowDialog';
 import { CodeWindowType } from '@/types/CodeWindow';
 
-const Index = () => {
-  const [windows, setWindows] = useState<CodeWindowType[]>([
-    {
-      id: '1',
-      title: 'JavaScript',
-      language: 'javascript',
-      code: 'const message = "Hello, World!";\nconsole.log(message);\n\n// Try writing some JavaScript!\nfunction greet(name) {\n  return `Hello, ${name}!`;\n}\n\ngreet("Developer");',
-      position: { x: 100, y: 100 },
-      size: { width: 400, height: 300 },
-      zIndex: 1
-    },
-    {
-      id: '2',
-      title: 'HTML',
-      language: 'html',
-      code: '<!DOCTYPE html>\n<html>\n<head>\n  <title>My Page</title>\n</head>\n<body>\n  <h1>Welcome to the Playground!</h1>\n  <p>This is a live HTML preview.</p>\n  <button onclick="alert(\'Hello!\')">Click me</button>\n</body>\n</html>',
-      position: { x: 520, y: 100 },
-      size: { width: 400, height: 300 },
-      zIndex: 2
-    },
-    {
-      id: '3',
-      title: 'Python',
-      language: 'python',
-      code: '# Python in the browser!\nimport math\n\ndef fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)\n\nprint("Fibonacci sequence:")\nfor i in range(8):\n    print(f"F({i}) = {fibonacci(i)}")',
-      position: { x: 300, y: 420 },
-      size: { width: 400, height: 300 },
-      zIndex: 3
-    }
-  ]);
+const LANGUAGES = {
+  javascript: { name: 'JavaScript', color: '#F7DF1E', icon: '🟨' },
+  python: { name: 'Python', color: '#3776AB', icon: '🐍' },
+  html: { name: 'HTML', color: '#E34F26', icon: '🌐' },
+  css: { name: 'CSS', color: '#1572B6', icon: '🎨' },
+  react: { name: 'React', color: '#61DAFB', icon: '⚛️' },
+  java: { name: 'Java', color: '#007396', icon: '☕' },
+  cpp: { name: 'C++', color: '#00599C', icon: '⚙️' },
+  php: { name: 'PHP', color: '#777BB4', icon: '🐘' },
+  swift: { name: 'Swift', color: '#FA7343', icon: '🦉' },
+  go: { name: 'Go', color: '#00ADD8', icon: '🐹' },
+  rust: { name: 'Rust', color: '#000000', icon: '🦀' },
+  sql: { name: 'SQL', color: '#336791', icon: '🗃️' }
+};
 
+const MenuDropdown = ({ title, items, onItemClick, isOpen, onToggle }) => (
+  <div className="relative">
+    <button
+      onClick={onToggle}
+      className="px-3 py-2 text-sm hover:bg-gray-100 rounded flex items-center gap-1 touch-manipulation min-h-[44px]"
+    >
+      {title}
+      <ChevronDown size={12} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+    </button>
+    {isOpen && (
+      <div className="absolute top-full left-0 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[180px] max-h-80 overflow-y-auto">
+        {items.map((item, index) => (
+          <button
+            key={index}
+            onClick={() => { onItemClick(item); onToggle(); }}
+            className="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 touch-manipulation min-h-[44px] flex items-center"
+          >
+            {item.icon && <span className="mr-3 text-lg">{item.icon}</span>}
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+const Index = () => {
+  const [windows, setWindows] = useState<CodeWindowType[]>([]);
   const [isNewWindowOpen, setIsNewWindowOpen] = useState(false);
   const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
   const [canvasScale, setCanvasScale] = useState(1);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [highestZIndex, setHighestZIndex] = useState(3);
+  const [nextId, setNextId] = useState(1);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768 || 'ontouchstart' in window);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Prevent zoom on iOS
+  useEffect(() => {
+    if (isMobile) {
+      const meta = document.querySelector('meta[name="viewport"]');
+      if (meta) {
+        meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+      }
+    }
+  }, [isMobile]);
 
   const updateWindow = useCallback((id: string, updates: Partial<CodeWindowType>) => {
     setWindows(prev => prev.map(window => 
@@ -60,70 +93,136 @@ const Index = () => {
     setWindows(prev => prev.filter(window => window.id !== id));
   }, []);
 
-  const addNewWindow = useCallback((language: string) => {
-    const defaultCode = {
-      javascript: '// New JavaScript window\nconsole.log("Hello from JavaScript!");',
-      html: '<!DOCTYPE html>\n<html>\n<head>\n  <title>New Page</title>\n</head>\n<body>\n  <h1>New HTML Window</h1>\n</body>\n</html>',
-      css: '/* New CSS window */\nbody {\n  font-family: Arial, sans-serif;\n  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n}',
-      python: '# New Python window\nprint("Hello from Python!")',
-      java: '// New Java window\npublic class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello from Java!");\n  }\n}',
-      cpp: '// New C++ window\n#include <iostream>\nusing namespace std;\n\nint main() {\n  cout << "Hello from C++!" << endl;\n  return 0;\n}'
+  const getDefaultCode = (language: string) => {
+    const examples = {
+      javascript: 'const greeting = "Hello World!";\nconsole.log(greeting);\n\nconst numbers = [1, 2, 3, 4, 5];\nconst sum = numbers.reduce((a, b) => a + b, 0);\nconsole.log(`Sum: ${sum}`);',
+      python: 'print("Hello from Python!")\n\nnumbers = [1, 2, 3, 4, 5]\nsum_result = sum(numbers)\nprint(f"Sum: {sum_result}")',
+      html: '<!DOCTYPE html>\n<html>\n<head>\n  <title>Mobile Page</title>\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n</head>\n<body style="font-family: Arial; padding: 20px; text-align: center;">\n  <h1 style="color: #E34F26;">Hello HTML!</h1>\n  <p>Mobile-optimized content</p>\n  <button onclick="alert(\'Hello!\')" style="padding: 10px 20px; font-size: 16px;">Tap Me</button>\n</body>\n</html>',
+      css: '.mobile-container {\n  padding: 20px;\n  background: linear-gradient(45deg, #1572B6, #33A9DC);\n  border-radius: 15px;\n  color: white;\n  text-align: center;\n  transition: transform 0.3s ease;\n  touch-action: manipulation;\n}\n\n.mobile-container:active {\n  transform: scale(0.98);\n}\n\n@media (max-width: 768px) {\n  .mobile-container {\n    font-size: 18px;\n    padding: 15px;\n  }\n}',
+      react: 'function MobileApp() {\n  const [count, setCount] = useState(0);\n  \n  return (\n    <div style={{\n      padding: "20px",\n      textAlign: "center",\n      fontFamily: "Arial"\n    }}>\n      <h1>Mobile React App</h1>\n      <p style={{ fontSize: "18px" }}>Count: {count}</p>\n      <button \n        onClick={() => setCount(count + 1)}\n        style={{\n          padding: "12px 24px",\n          fontSize: "16px",\n          minHeight: "44px",\n          touchAction: "manipulation"\n        }}\n      >\n        Tap to Increment\n      </button>\n    </div>\n  );\n}',
+      java: 'public class MobileHello {\n    public static void main(String[] args) {\n        System.out.println("Hello from Java on Mobile!");\n        \n        int[] numbers = {1, 2, 3, 4, 5};\n        int sum = 0;\n        for (int num : numbers) {\n            sum += num;\n        }\n        System.out.println("Sum: " + sum);\n    }\n}',
+      cpp: '#include <iostream>\n#include <vector>\n\nint main() {\n    std::cout << "Hello from C++ Mobile!" << std::endl;\n    \n    std::vector<int> numbers = {1, 2, 3, 4, 5};\n    int sum = 0;\n    for (int num : numbers) {\n        sum += num;\n    }\n    \n    std::cout << "Sum: " << sum << std::endl;\n    return 0;\n}',
+      php: '<?php\necho "Hello from PHP Mobile!\\n";\n\n$numbers = [1, 2, 3, 4, 5];\n$sum = array_sum($numbers);\n\necho "Sum: " . $sum . "\\n";\n?>',
+      swift: 'import UIKit\n\nclass MobileViewController: UIViewController {\n    override func viewDidLoad() {\n        super.viewDidLoad()\n        \n        print("Hello from Swift!")\n        \n        let numbers = [1, 2, 3, 4, 5]\n        let sum = numbers.reduce(0, +)\n        print("Sum: \\(sum)")\n    }\n}',
+      go: 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello from Go Mobile!")\n    \n    numbers := []int{1, 2, 3, 4, 5}\n    sum := 0\n    for _, num := range numbers {\n        sum += num\n    }\n    \n    fmt.Printf("Sum: %d\\n", sum)\n}',
+      rust: 'fn main() {\n    println!("Hello from Rust Mobile!");\n    \n    let numbers = vec![1, 2, 3, 4, 5];\n    let sum: i32 = numbers.iter().sum();\n    \n    println!("Sum: {}", sum);\n}',
+      sql: 'SELECT "Hello from SQL Mobile!" as greeting;\n\nCREATE TABLE mobile_data (\n    id INTEGER PRIMARY KEY,\n    value INTEGER\n);\n\nINSERT INTO mobile_data VALUES \n(1, 10), (2, 20), (3, 30);\n\nSELECT SUM(value) as total \nFROM mobile_data;'
     };
+    return examples[language] || `// ${LANGUAGES[language]?.name || language} code here`;
+  };
 
+  const addNewWindow = useCallback((language: string) => {
+    const lang = LANGUAGES[language] || { name: language, color: '#666', icon: '📄' };
+    
     const newWindow: CodeWindowType = {
-      id: Date.now().toString(),
-      title: language.charAt(0).toUpperCase() + language.slice(1),
+      id: nextId.toString(),
+      title: lang.name,
       language,
-      code: defaultCode[language as keyof typeof defaultCode] || '// New code window',
+      code: getDefaultCode(language),
       position: { 
-        x: Math.random() * 300 + 100, 
-        y: Math.random() * 200 + 100 
+        x: Math.random() * (isMobile ? 50 : 200) + 20, 
+        y: Math.random() * (isMobile ? 100 : 150) + 80 
       },
-      size: { width: 400, height: 300 },
+      size: { 
+        width: isMobile ? Math.min(350, window.innerWidth - 40) : 400, 
+        height: isMobile ? 300 : 350 
+      },
       zIndex: highestZIndex + 1
     };
 
     setWindows(prev => [...prev, newWindow]);
+    setNextId(prev => prev + 1);
     setHighestZIndex(prev => prev + 1);
     setIsNewWindowOpen(false);
-  }, [highestZIndex]);
+  }, [highestZIndex, nextId, isMobile]);
+
+  const toggleDropdown = (dropdown: string) => {
+    setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
+  };
+
+  const fileMenuItems = [
+    { label: 'New Project', icon: '📁', action: () => setWindows([]) },
+    { label: 'Clear Canvas', icon: '🗑️', action: () => setWindows([]) }
+  ];
+
+  const languageMenuItems = Object.entries(LANGUAGES).map(([key, lang]) => ({
+    label: lang.name,
+    icon: lang.icon,
+    action: () => addNewWindow(key)
+  }));
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-gray-50 relative">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Code className="w-6 h-6 text-blue-600" />
-              <h1 className="text-xl font-bold text-gray-900">Interactive Coding Playground</h1>
-            </div>
-            <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
-              <Monitor className="w-4 h-4" />
-              <span>Desktop View</span>
+      {/* Mobile-Optimized Header */}
+      <div className="absolute top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-200">
+        {isMobile ? (
+          // Mobile Menu
+          <div className="px-4 py-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Code className="w-6 h-6 text-blue-600" />
+                <h1 className="text-lg font-bold text-gray-900">Code Studio</h1>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">
+                  {windows.length} window{windows.length !== 1 ? 's' : ''}
+                </span>
+                <MenuDropdown
+                  title="+"
+                  items={languageMenuItems}
+                  onItemClick={(item) => item.action()}
+                  isOpen={activeDropdown === 'new'}
+                  onToggle={() => toggleDropdown('new')}
+                />
+                <MenuDropdown
+                  title="⚙️"
+                  items={fileMenuItems}
+                  onItemClick={(item) => item.action()}
+                  isOpen={activeDropdown === 'settings'}
+                  onToggle={() => toggleDropdown('settings')}
+                />
+              </div>
             </div>
           </div>
-          
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => setIsNewWindowOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              New Window
-            </Button>
+        ) : (
+          // Desktop Menu (keep existing)
+          <div className="px-6 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Code className="w-6 h-6 text-blue-600" />
+                  <h1 className="text-xl font-bold text-gray-900">Interactive Coding Playground</h1>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Monitor className="w-4 h-4" />
+                  <span>Desktop View</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => setIsNewWindowOpen(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  New Window
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Canvas */}
       <div 
         ref={canvasRef}
-        className="absolute inset-0 pt-16"
+        className={`absolute inset-0 ${isMobile ? 'pt-16' : 'pt-20'}`}
         style={{
           transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${canvasScale})`,
           transformOrigin: '0 0'
         }}
+        onClick={() => setActiveDropdown(null)}
       >
         <CanvasBackground />
         
@@ -139,20 +238,48 @@ const Index = () => {
         ))}
       </div>
 
-      {/* Mobile indicator */}
-      <div className="md:hidden absolute bottom-4 left-4 right-4 bg-blue-600 text-white p-3 rounded-lg shadow-lg">
-        <div className="flex items-center gap-2">
-          <Smartphone className="w-4 h-4" />
-          <span className="text-sm font-medium">Touch optimized for mobile</span>
+      {/* Mobile Welcome State */}
+      {windows.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-gray-500 max-w-md p-8">
+            <div className="text-6xl mb-6">📱</div>
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">
+              {isMobile ? 'Mobile Code Studio' : 'Interactive Coding Playground'}
+            </h2>
+            <p className="text-lg mb-8">
+              {isMobile 
+                ? 'Tap the + button to create your first code window' 
+                : 'Create windows to start coding in any language'
+              }
+            </p>
+            <div className="text-sm text-gray-400">
+              {isMobile 
+                ? 'Optimized for touch • Drag • Resize • Code anywhere'
+                : 'Click "New Window" in the menu bar to get started'
+              }
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* New Window Dialog */}
-      <NewWindowDialog
-        isOpen={isNewWindowOpen}
-        onClose={() => setIsNewWindowOpen(false)}
-        onCreateWindow={addNewWindow}
-      />
+      {/* Mobile indicator */}
+      {isMobile && (
+        <div className="absolute bottom-4 left-4 right-4 bg-blue-600 text-white p-3 rounded-lg shadow-lg">
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-4 h-4" />
+            <span className="text-sm font-medium">Touch-optimized mobile coding</span>
+          </div>
+        </div>
+      )}
+
+      {/* New Window Dialog (Desktop) */}
+      {!isMobile && (
+        <NewWindowDialog
+          isOpen={isNewWindowOpen}
+          onClose={() => setIsNewWindowOpen(false)}
+          onCreateWindow={addNewWindow}
+        />
+      )}
     </div>
   );
 };
