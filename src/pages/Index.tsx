@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import CodeWindow from '@/components/CodeWindow';
 import CanvasBackground from '@/components/CanvasBackground';
 import NewWindowDialog from '@/components/NewWindowDialog';
+import MobileFloatingMenu from '@/components/MobileFloatingMenu';
 import { CodeWindowType } from '@/types/CodeWindow';
 
 const LANGUAGES = {
@@ -111,7 +112,7 @@ const Index = () => {
     return examples[language] || `// ${LANGUAGES[language]?.name || language} code here`;
   };
 
-  const addNewWindow = useCallback((language: string) => {
+  const addNewWindow = useCallback((language: string, isWidget: boolean = false) => {
     const lang = LANGUAGES[language] || { name: language, color: '#666', icon: '📄' };
     
     const newWindow: CodeWindowType = {
@@ -124,8 +125,8 @@ const Index = () => {
         y: Math.random() * (isMobile ? 100 : 150) + 80 
       },
       size: { 
-        width: isMobile ? Math.min(350, window.innerWidth - 40) : 400, 
-        height: isMobile ? 300 : 350 
+        width: isWidget && isMobile ? 140 : (isMobile ? Math.min(350, globalThis.window.innerWidth - 40) : 400), 
+        height: isWidget && isMobile ? 140 : (isMobile ? 300 : 350)
       },
       zIndex: highestZIndex + 1
     };
@@ -135,6 +136,13 @@ const Index = () => {
     setHighestZIndex(prev => prev + 1);
     setIsNewWindowOpen(false);
   }, [highestZIndex, nextId, isMobile]);
+
+  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
+    // Only trigger on direct canvas clicks, not on window elements
+    if (e.target === e.currentTarget && isMobile) {
+      // This will be handled by the floating menu instead
+    }
+  }, [isMobile]);
 
   const toggleDropdown = (dropdown: string) => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
@@ -222,7 +230,10 @@ const Index = () => {
           transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${canvasScale})`,
           transformOrigin: '0 0'
         }}
-        onClick={() => setActiveDropdown(null)}
+        onClick={(e) => {
+          setActiveDropdown(null);
+          handleCanvasClick(e);
+        }}
       >
         <CanvasBackground />
         
@@ -248,13 +259,13 @@ const Index = () => {
             </h2>
             <p className="text-lg mb-8">
               {isMobile 
-                ? 'Tap the + button to create your first code window' 
+                ? 'Tap the + button to create your first code widget' 
                 : 'Create windows to start coding in any language'
               }
             </p>
             <div className="text-sm text-gray-400">
               {isMobile 
-                ? 'Optimized for touch • Drag • Resize • Code anywhere'
+                ? 'Create widgets • Drag to move • Tap Edit to code'
                 : 'Click "New Window" in the menu bar to get started'
               }
             </div>
@@ -264,12 +275,17 @@ const Index = () => {
 
       {/* Mobile indicator */}
       {isMobile && (
-        <div className="absolute bottom-4 left-4 right-4 bg-blue-600 text-white p-3 rounded-lg shadow-lg">
+        <div className="absolute bottom-20 left-4 right-4 bg-blue-600 text-white p-3 rounded-lg shadow-lg">
           <div className="flex items-center gap-2">
             <Smartphone className="w-4 h-4" />
-            <span className="text-sm font-medium">Touch-optimized mobile coding</span>
+            <span className="text-sm font-medium">Touch-optimized coding widgets</span>
           </div>
         </div>
+      )}
+
+      {/* Mobile Floating Menu */}
+      {isMobile && (
+        <MobileFloatingMenu onCreateWindow={(lang) => addNewWindow(lang, true)} />
       )}
 
       {/* New Window Dialog (Desktop) */}

@@ -1,9 +1,11 @@
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Play, Maximize2, Minimize2, GripHorizontal, Eye, Code as CodeIcon } from 'lucide-react';
+import { X, Play, Maximize2, Minimize2, GripHorizontal, Eye, Code as CodeIcon, Edit3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
 import CodePreview from './CodePreview';
+import MobileCodeEditor from './MobileCodeEditor';
 
 interface CodeWindowProps {
   window: CodeWindowType;
@@ -38,6 +40,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [showPreview, setShowPreview] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [mobileEditorOpen, setMobileEditorOpen] = useState(false);
   const windowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -147,6 +150,82 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     }
   }, [codeWindow.language, codeWindow.code]);
 
+  const handleMobileEdit = () => {
+    setMobileEditorOpen(true);
+  };
+
+  // Mobile widget mode - smaller, simplified interface
+  if (isMobile && codeWindow.size.width < 200) {
+    return (
+      <>
+        <div
+          ref={windowRef}
+          className={`absolute bg-white rounded-2xl shadow-xl border-2 ${languageColor} ${
+            isDragging ? 'cursor-grabbing shadow-2xl scale-105' : 'cursor-grab'
+          } select-none overflow-hidden transition-all duration-200`}
+          style={{
+            left: codeWindow.position.x,
+            top: codeWindow.position.y,
+            width: Math.max(120, codeWindow.size.width),
+            height: Math.max(120, codeWindow.size.height),
+            zIndex: codeWindow.zIndex,
+            touchAction: 'none'
+          }}
+        >
+          {/* Widget Header */}
+          <div
+            className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-2 flex items-center justify-between cursor-move touch-none"
+            onMouseDown={(e) => handleStart(e, 'drag')}
+            onTouchStart={(e) => handleStart(e, 'drag')}
+          >
+            <span className="text-xs font-medium text-gray-700 truncate flex-1">{codeWindow.title}</span>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onDelete(codeWindow.id)}
+              className="h-6 w-6 p-0 hover:bg-red-100"
+            >
+              <X className="w-3 h-3 text-red-600" />
+            </Button>
+          </div>
+
+          {/* Widget Content */}
+          <div className="p-3 flex flex-col items-center justify-center h-full bg-gray-50">
+            <span className="text-2xl mb-2">{lang.icon}</span>
+            <span className="text-xs text-gray-600 text-center mb-2">{lang.name}</span>
+            <Button
+              size="sm"
+              onClick={handleMobileEdit}
+              className="h-8 w-full text-xs bg-blue-600 hover:bg-blue-700"
+            >
+              <Edit3 className="w-3 h-3 mr-1" />
+              Edit
+            </Button>
+          </div>
+
+          {/* Widget Resize Handle */}
+          <div
+            className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize"
+            onMouseDown={(e) => handleStart(e, 'resize')}
+            onTouchStart={(e) => handleStart(e, 'resize')}
+          >
+            <GripHorizontal className="w-4 h-4 text-gray-400 transform rotate-45 absolute bottom-1 right-1" />
+          </div>
+        </div>
+
+        <MobileCodeEditor
+          isOpen={mobileEditorOpen}
+          onClose={() => setMobileEditorOpen(false)}
+          title={codeWindow.title}
+          language={codeWindow.language}
+          code={codeWindow.code}
+          onChange={handleCodeChange}
+        />
+      </>
+    );
+  }
+
+  // Regular desktop/large mobile window mode
   return (
     <div
       ref={windowRef}
