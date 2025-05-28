@@ -58,11 +58,17 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
     }
   };
 
+  const handleEditClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onEdit();
+  };
+
   return (
     <div
       className={`absolute bg-white rounded-2xl shadow-xl border-2 ${languageColor} ${
-        isDragging ? 'cursor-grabbing shadow-2xl' : 'cursor-grab'
-      } select-none overflow-hidden transition-shadow duration-200`}
+        isDragging ? 'cursor-grabbing shadow-2xl' : ''
+      } select-none overflow-hidden transition-all duration-200`}
       style={{
         left: position.x,
         top: position.y,
@@ -90,29 +96,28 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
             e.stopPropagation();
             onDelete();
           }}
-          className="h-6 w-6 p-0 hover:bg-red-100 z-10 relative touch-manipulation"
+          className="h-6 w-6 p-0 hover:bg-red-100 z-20 relative touch-manipulation"
           style={{ touchAction: 'manipulation' }}
         >
           <X className="w-3 h-3 text-red-600" />
         </Button>
       </div>
 
-      {/* Widget Content */}
-      <div className="p-3 flex flex-col items-center justify-center h-full bg-gray-50 pointer-events-none">
+      {/* Widget Content - Always show edit button prominently */}
+      <div className="p-3 flex flex-col items-center justify-center h-full bg-gray-50 relative">
         <span className="text-2xl mb-2 pointer-events-none">{langIcon}</span>
-        <span className="text-xs text-gray-600 text-center mb-2 pointer-events-none">{langName}</span>
+        <span className="text-xs text-gray-600 text-center mb-3 pointer-events-none">{langName}</span>
+        
+        {/* Large, prominent edit button */}
         <Button
           size="sm"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onEdit();
-          }}
-          className="h-8 w-full text-xs bg-blue-600 hover:bg-blue-700 pointer-events-auto z-10 relative touch-manipulation"
+          onClick={handleEditClick}
+          onTouchStart={handleEditClick}
+          className="h-10 w-full text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium z-30 relative touch-manipulation min-h-[44px]"
           style={{ touchAction: 'manipulation' }}
         >
-          <Edit3 className="w-3 h-3 mr-1" />
-          Edit
+          <Edit3 className="w-4 h-4 mr-2" />
+          Edit Code
         </Button>
       </div>
 

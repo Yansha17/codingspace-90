@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
@@ -42,6 +41,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileEditorOpen, setMobileEditorOpen] = useState(false);
+  const [previewKey, setPreviewKey] = useState(0);
   const windowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -149,8 +149,16 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     console.log(`Running ${codeWindow.language} code:`, codeWindow.code);
     if (['html', 'css', 'javascript'].includes(codeWindow.language)) {
       setShowPreview(true);
+      setPreviewKey(prev => prev + 1);
     }
   }, [codeWindow.language, codeWindow.code]);
+
+  const handleTogglePreview = useCallback(() => {
+    setShowPreview(!showPreview);
+    if (!showPreview) {
+      setPreviewKey(prev => prev + 1);
+    }
+  }, [showPreview]);
 
   const canRun = ['javascript', 'python', 'html', 'css'].includes(codeWindow.language);
   const canPreview = ['html', 'css', 'javascript'].includes(codeWindow.language);
@@ -214,7 +222,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
         canRun={canRun}
         canPreview={canPreview}
         onRun={handleRunCode}
-        onTogglePreview={() => setShowPreview(!showPreview)}
+        onTogglePreview={handleTogglePreview}
         onDelete={() => onDelete(codeWindow.id)}
         onMouseDown={(e) => handleStart(e, 'drag')}
         onTouchStart={(e) => handleStart(e, 'drag')}
@@ -233,6 +241,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
         {showPreview && canPreview && (
           <div className="h-1/2 border-t border-gray-200">
             <CodePreview
+              key={previewKey}
               language={codeWindow.language}
               code={codeWindow.code}
             />

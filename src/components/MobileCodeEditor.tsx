@@ -29,6 +29,7 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
 }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [previewKey, setPreviewKey] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -55,6 +56,16 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
     console.log(`Running ${language} code:`, code);
     if (['html', 'css', 'javascript'].includes(language)) {
       setShowPreview(true);
+      // Force refresh the preview
+      setPreviewKey(prev => prev + 1);
+    }
+  };
+
+  const handleTogglePreview = () => {
+    setShowPreview(!showPreview);
+    if (!showPreview) {
+      // Force refresh when showing preview
+      setPreviewKey(prev => prev + 1);
     }
   };
 
@@ -89,87 +100,101 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
     }
   };
 
+  // Auto-expand when opened
+  useEffect(() => {
+    if (isOpen) {
+      setIsExpanded(true);
+    }
+  }, [isOpen]);
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
         side="bottom" 
-        className={`${isExpanded ? 'h-[90vh]' : 'h-[50vh]'} rounded-t-2xl transition-all duration-300`}
+        className={`${isExpanded ? 'h-[95vh]' : 'h-[60vh]'} rounded-t-2xl transition-all duration-300 p-0`}
       >
-        <SheetHeader className="flex flex-row items-center justify-between pb-4">
-          <SheetTitle className="text-lg">{title}</SheetTitle>
-          <div className="flex items-center gap-2">
-            {['javascript', 'python', 'html', 'css'].includes(language) && (
+        <div className="flex flex-col h-full">
+          <SheetHeader className="flex flex-row items-center justify-between p-4 pb-2 border-b border-gray-200">
+            <SheetTitle className="text-lg">{title}</SheetTitle>
+            <div className="flex items-center gap-2">
+              {['javascript', 'python', 'html', 'css'].includes(language) && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleRunCode}
+                  className="h-8 w-8 p-0 hover:bg-green-100 touch-manipulation"
+                >
+                  <Play className="w-4 h-4 text-green-600" />
+                </Button>
+              )}
+              
+              {['html', 'css', 'javascript'].includes(language) && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleTogglePreview}
+                  className="h-8 w-8 p-0 hover:bg-blue-100 touch-manipulation"
+                >
+                  {showPreview ? (
+                    <CodeIcon className="w-4 h-4 text-blue-600" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-blue-600" />
+                  )}
+                </Button>
+              )}
+              
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={handleRunCode}
-                className="h-8 w-8 p-0 hover:bg-green-100"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="h-8 w-8 p-0 touch-manipulation"
               >
-                <Play className="w-4 h-4 text-green-600" />
-              </Button>
-            )}
-            
-            {['html', 'css', 'javascript'].includes(language) && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowPreview(!showPreview)}
-                className="h-8 w-8 p-0 hover:bg-blue-100"
-              >
-                {showPreview ? (
-                  <CodeIcon className="w-4 h-4 text-blue-600" />
+                {isExpanded ? (
+                  <ChevronDown className="w-4 h-4" />
                 ) : (
-                  <Eye className="w-4 h-4 text-blue-600" />
+                  <ChevronUp className="w-4 h-4" />
                 )}
               </Button>
-            )}
-            
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="h-8 w-8 p-0"
-            >
-              {isExpanded ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronUp className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
-        </SheetHeader>
-        
-        <div className="flex flex-col h-full">
-          <div className={`${showPreview ? 'h-1/2' : 'h-full'} flex-1`}>
-            <div className="relative h-full bg-gray-900 rounded-lg overflow-hidden">
-              <textarea
-                ref={textareaRef}
-                value={code}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                placeholder={getLanguageComment()}
-                className="absolute inset-0 pl-4 pr-4 py-2 bg-transparent text-white font-mono resize-none outline-none text-base"
-                style={{
-                  lineHeight: '1.5',
-                  tabSize: 2,
-                  fontSize: '16px', // Prevent zoom on iOS
-                  WebkitAppearance: 'none',
-                  borderRadius: 0
-                }}
-                spellCheck={false}
-                autoCapitalize="off"
-                autoCorrect="off"
-                autoComplete="off"
-                data-gramm="false"
-              />
             </div>
-          </div>
+          </SheetHeader>
           
-          {showPreview && ['html', 'css', 'javascript'].includes(language) && (
-            <div className="h-1/2 border-t border-gray-200 mt-2">
-              <CodePreview language={language} code={code} />
+          <div className="flex flex-col h-full overflow-hidden">
+            <div className={`${showPreview ? 'h-1/2' : 'h-full'} flex-1 min-h-0`}>
+              <div className="relative h-full bg-gray-900 rounded-none overflow-hidden">
+                <textarea
+                  ref={textareaRef}
+                  value={code}
+                  onChange={handleChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder={getLanguageComment()}
+                  className="absolute inset-0 w-full h-full pl-4 pr-4 py-3 bg-transparent text-white font-mono resize-none outline-none text-base border-none"
+                  style={{
+                    lineHeight: '1.5',
+                    tabSize: 2,
+                    fontSize: '16px',
+                    WebkitAppearance: 'none',
+                    borderRadius: 0,
+                    minHeight: '100%'
+                  }}
+                  spellCheck={false}
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  autoComplete="off"
+                  data-gramm="false"
+                />
+              </div>
             </div>
-          )}
+            
+            {showPreview && ['html', 'css', 'javascript'].includes(language) && (
+              <div className="h-1/2 border-t border-gray-200 min-h-0">
+                <CodePreview 
+                  key={previewKey}
+                  language={language} 
+                  code={code} 
+                />
+              </div>
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>
