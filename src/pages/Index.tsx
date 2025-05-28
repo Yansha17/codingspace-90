@@ -137,10 +137,17 @@ const Index = () => {
     setIsNewWindowOpen(false);
   }, [highestZIndex, nextId, isMobile]);
 
-  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
-    // Only trigger on direct canvas clicks, not on window elements
+  const handleCanvasClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    // Prevent interference with widget interactions
+    if (e.target === e.currentTarget) {
+      setActiveDropdown(null);
+    }
+  }, []);
+
+  const handleCanvasTouch = useCallback((e: React.TouchEvent) => {
+    // Only handle if touching the canvas directly, not a widget
     if (e.target === e.currentTarget && isMobile) {
-      // This will be handled by the floating menu instead
+      setActiveDropdown(null);
     }
   }, [isMobile]);
 
@@ -228,12 +235,11 @@ const Index = () => {
         className={`absolute inset-0 ${isMobile ? 'pt-16' : 'pt-20'}`}
         style={{
           transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${canvasScale})`,
-          transformOrigin: '0 0'
+          transformOrigin: '0 0',
+          touchAction: 'pan-x pan-y'
         }}
-        onClick={(e) => {
-          setActiveDropdown(null);
-          handleCanvasClick(e);
-        }}
+        onClick={handleCanvasClick}
+        onTouchStart={handleCanvasTouch}
       >
         <CanvasBackground />
         

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
@@ -101,16 +102,16 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     
     if (isDragging) {
-      const newX = Math.max(0, clientX - dragOffset.x);
-      const newY = Math.max(60, clientY - dragOffset.y);
+      const newX = Math.max(0, Math.min(globalThis.window.innerWidth - 120, clientX - dragOffset.x));
+      const newY = Math.max(60, Math.min(globalThis.window.innerHeight - 120, clientY - dragOffset.y));
       
       onUpdate(codeWindow.id, {
         position: { x: newX, y: newY }
       });
     } else if (isResizing && windowRef.current) {
       const rect = windowRef.current.getBoundingClientRect();
-      const newWidth = Math.max(isMobile ? 280 : 300, clientX - rect.left + 10);
-      const newHeight = Math.max(200, clientY - rect.top + 10);
+      const newWidth = Math.max(isMobile ? 120 : 300, Math.min(globalThis.window.innerWidth - rect.left, clientX - rect.left + 10));
+      const newHeight = Math.max(120, Math.min(globalThis.window.innerHeight - rect.top, clientY - rect.top + 10));
       
       onUpdate(codeWindow.id, {
         size: { width: newWidth, height: newHeight }
@@ -125,9 +126,10 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
 
   useEffect(() => {
     if (isDragging || isResizing) {
+      const options = { passive: false };
       document.addEventListener('mousemove', handleMove);
       document.addEventListener('mouseup', handleEnd);
-      document.addEventListener('touchmove', handleMove, { passive: false });
+      document.addEventListener('touchmove', handleMove, options);
       document.addEventListener('touchend', handleEnd);
     }
 
