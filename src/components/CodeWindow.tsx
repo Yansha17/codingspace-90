@@ -1,11 +1,11 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Play, Maximize2, Minimize2, GripHorizontal, Eye, Code as CodeIcon, Edit3 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
 import CodePreview from './CodePreview';
 import MobileCodeEditor from './MobileCodeEditor';
+import WindowHeader from './WindowHeader';
+import MobileWidget from './MobileWidget';
+import WindowResizeHandle from './WindowResizeHandle';
 
 interface CodeWindowProps {
   window: CodeWindowType;
@@ -150,68 +150,29 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     }
   }, [codeWindow.language, codeWindow.code]);
 
-  const handleMobileEdit = () => {
-    setMobileEditorOpen(true);
-  };
+  const canRun = ['javascript', 'python', 'html', 'css'].includes(codeWindow.language);
+  const canPreview = ['html', 'css', 'javascript'].includes(codeWindow.language);
 
   // Mobile widget mode - smaller, simplified interface
   if (isMobile && codeWindow.size.width < 200) {
     return (
       <>
-        <div
-          ref={windowRef}
-          className={`absolute bg-white rounded-2xl shadow-xl border-2 ${languageColor} ${
-            isDragging ? 'cursor-grabbing shadow-2xl scale-105' : 'cursor-grab'
-          } select-none overflow-hidden transition-all duration-200`}
-          style={{
-            left: codeWindow.position.x,
-            top: codeWindow.position.y,
-            width: Math.max(120, codeWindow.size.width),
-            height: Math.max(120, codeWindow.size.height),
-            zIndex: codeWindow.zIndex,
-            touchAction: 'none'
-          }}
-        >
-          {/* Widget Header */}
-          <div
-            className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-2 flex items-center justify-between cursor-move touch-none"
-            onMouseDown={(e) => handleStart(e, 'drag')}
-            onTouchStart={(e) => handleStart(e, 'drag')}
-          >
-            <span className="text-xs font-medium text-gray-700 truncate flex-1">{codeWindow.title}</span>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onDelete(codeWindow.id)}
-              className="h-6 w-6 p-0 hover:bg-red-100"
-            >
-              <X className="w-3 h-3 text-red-600" />
-            </Button>
-          </div>
-
-          {/* Widget Content */}
-          <div className="p-3 flex flex-col items-center justify-center h-full bg-gray-50">
-            <span className="text-2xl mb-2">{lang.icon}</span>
-            <span className="text-xs text-gray-600 text-center mb-2">{lang.name}</span>
-            <Button
-              size="sm"
-              onClick={handleMobileEdit}
-              className="h-8 w-full text-xs bg-blue-600 hover:bg-blue-700"
-            >
-              <Edit3 className="w-3 h-3 mr-1" />
-              Edit
-            </Button>
-          </div>
-
-          {/* Widget Resize Handle */}
-          <div
-            className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize"
-            onMouseDown={(e) => handleStart(e, 'resize')}
-            onTouchStart={(e) => handleStart(e, 'resize')}
-          >
-            <GripHorizontal className="w-4 h-4 text-gray-400 transform rotate-45 absolute bottom-1 right-1" />
-          </div>
-        </div>
+        <MobileWidget
+          title={codeWindow.title}
+          langIcon={lang.icon}
+          langName={lang.name}
+          position={codeWindow.position}
+          size={codeWindow.size}
+          zIndex={codeWindow.zIndex}
+          languageColor={languageColor}
+          isDragging={isDragging}
+          onEdit={() => setMobileEditorOpen(true)}
+          onDelete={() => onDelete(codeWindow.id)}
+          onMouseDown={(e) => handleStart(e, 'drag')}
+          onTouchStart={(e) => handleStart(e, 'drag')}
+          onResizeMouseDown={(e) => handleStart(e, 'resize')}
+          onResizeTouchStart={(e) => handleStart(e, 'resize')}
+        />
 
         <MobileCodeEditor
           isOpen={mobileEditorOpen}
@@ -241,64 +202,21 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
         touchAction: 'none'
       }}
     >
-      {/* Mobile-Optimized Title Bar */}
-      <div
-        className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-3 flex items-center justify-between cursor-move touch-none"
+      <WindowHeader
+        title={codeWindow.title}
+        language={codeWindow.language}
+        langColor={lang.color}
+        langIcon={lang.icon}
+        isMobile={isMobile}
+        showPreview={showPreview}
+        canRun={canRun}
+        canPreview={canPreview}
+        onRun={handleRunCode}
+        onTogglePreview={() => setShowPreview(!showPreview)}
+        onDelete={() => onDelete(codeWindow.id)}
         onMouseDown={(e) => handleStart(e, 'drag')}
         onTouchStart={(e) => handleStart(e, 'drag')}
-      >
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="flex gap-1">
-            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-            <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-          </div>
-          <span className="text-sm font-medium text-gray-700 truncate">{codeWindow.title}</span>
-          <span 
-            className={`text-xs px-2 py-1 rounded text-white ${isMobile ? 'hidden' : ''}`}
-            style={{ backgroundColor: lang.color }}
-          >
-            {lang.icon}
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {['javascript', 'python', 'html', 'css'].includes(codeWindow.language) && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleRunCode}
-              className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} p-0 hover:bg-green-100 touch-manipulation`}
-            >
-              <Play className={`${isMobile ? 'w-4 h-4' : 'w-3 h-3'} text-green-600`} />
-            </Button>
-          )}
-          
-          {['html', 'css', 'javascript'].includes(codeWindow.language) && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setShowPreview(!showPreview)}
-              className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} p-0 hover:bg-blue-100 touch-manipulation`}
-            >
-              {showPreview ? (
-                <CodeIcon className={`${isMobile ? 'w-4 h-4' : 'w-3 h-3'} text-blue-600`} />
-              ) : (
-                <Eye className={`${isMobile ? 'w-4 h-4' : 'w-3 h-3'} text-blue-600`} />
-              )}
-            </Button>
-          )}
-          
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onDelete(codeWindow.id)}
-            className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} p-0 hover:bg-red-100 touch-manipulation`}
-          >
-            <X className={`${isMobile ? 'w-4 h-4' : 'w-3 h-3'} text-red-600`} />
-          </Button>
-        </div>
-      </div>
+      />
 
       {/* Content */}
       <div className="flex flex-col h-full">
@@ -310,7 +228,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
           />
         </div>
         
-        {showPreview && ['html', 'css', 'javascript'].includes(codeWindow.language) && (
+        {showPreview && canPreview && (
           <div className="h-1/2 border-t border-gray-200">
             <CodePreview
               language={codeWindow.language}
@@ -320,14 +238,11 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
         )}
       </div>
 
-      {/* Mobile-Optimized Resize Handle */}
-      <div
-        className={`absolute bottom-0 right-0 ${isMobile ? 'w-8 h-8' : 'w-4 h-4'} cursor-se-resize touch-manipulation`}
+      <WindowResizeHandle
+        isMobile={isMobile}
         onMouseDown={(e) => handleStart(e, 'resize')}
         onTouchStart={(e) => handleStart(e, 'resize')}
-      >
-        <GripHorizontal className={`${isMobile ? 'w-6 h-6' : 'w-3 h-3'} text-gray-400 transform rotate-45 absolute bottom-1 right-1`} />
-      </div>
+      />
     </div>
   );
 };
