@@ -41,38 +41,48 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
   const [initialSize, setInitialSize] = useState({ width: 0, height: 0 });
   const resizeRef = useRef<HTMLDivElement>(null);
 
-  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if ('touches' in e) {
-      onTouchStart(e);
-    } else {
-      onMouseDown(e);
-    }
-  };
-
   const getDistance = (touch1: React.Touch, touch2: React.Touch) => {
     const dx = touch1.clientX - touch2.clientX;
     const dy = touch1.clientY - touch2.clientY;
     return Math.sqrt(dx * dx + dy * dy);
   };
 
-  const handleResizeStart = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleDragMouseStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onMouseDown(e);
+  };
+
+  const handleDragTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if ('touches' in e && e.touches.length === 2) {
-      // Pinch gesture detected
+    if (e.touches.length === 1) {
+      onTouchStart(e);
+    } else if (e.touches.length === 2) {
+      // Handle pinch gesture for resizing
       setIsResizing(true);
       setInitialPinchDistance(getDistance(e.touches[0], e.touches[1]));
       setInitialSize({ width: size.width, height: size.height });
-    } else if ('touches' in e && e.touches.length === 1) {
-      // Single touch resize
+    }
+  };
+
+  const handleResizeMouseStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onResizeMouseDown(e);
+  };
+
+  const handleResizeTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (e.touches.length === 1) {
       onResizeTouchStart(e);
-    } else {
-      // Mouse resize
-      onResizeMouseDown(e);
+    } else if (e.touches.length === 2) {
+      setIsResizing(true);
+      setInitialPinchDistance(getDistance(e.touches[0], e.touches[1]));
+      setInitialSize({ width: size.width, height: size.height });
     }
   };
 
@@ -99,16 +109,6 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
       setIsResizing(false);
       setInitialPinchDistance(0);
       setInitialSize({ width: 0, height: 0 });
-    }
-  };
-
-  // Handle touch events on the widget itself for pinch gestures
-  const handleWidgetTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      setIsResizing(true);
-      setInitialPinchDistance(getDistance(e.touches[0], e.touches[1]));
-      setInitialSize({ width: size.width, height: size.height });
     }
   };
 
@@ -148,13 +148,12 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
         transform: isDragging ? 'scale(1.05)' : isResizing ? 'scale(1.02)' : 'scale(1)',
         transition: (isDragging || isResizing) ? 'none' : 'transform 0.2s ease-out, box-shadow 0.2s ease-out'
       }}
-      onTouchStart={handleWidgetTouchStart}
     >
       {/* Widget Header - Drag Area */}
       <div
         className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-2 flex items-center justify-between cursor-move active:cursor-grabbing"
-        onMouseDown={handleDragStart}
-        onTouchStart={handleDragStart}
+        onMouseDown={handleDragMouseStart}
+        onTouchStart={handleDragTouchStart}
         style={{ touchAction: 'none' }}
       >
         <span className="text-xs font-medium text-gray-700 truncate flex-1 pointer-events-none">{title}</span>
@@ -197,8 +196,8 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
         className={`absolute bottom-0 right-0 w-16 h-16 cursor-se-resize z-20 touch-manipulation ${
           isResizing ? 'bg-blue-100 rounded-tl-lg' : 'bg-gray-100/50 hover:bg-gray-100'
         } flex items-center justify-center transition-colors`}
-        onMouseDown={handleResizeStart}
-        onTouchStart={handleResizeStart}
+        onMouseDown={handleResizeMouseStart}
+        onTouchStart={handleResizeTouchStart}
         style={{ touchAction: 'none' }}
       >
         <GripHorizontal className={`w-6 h-6 text-gray-400 transform rotate-45 ${
