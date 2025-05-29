@@ -157,8 +157,8 @@ const Index = () => {
         y: Math.random() * (isMobile ? 100 : 150) + 80 
       },
       size: { 
-        width: isWidget && isMobile ? 140 : (isMobile ? Math.min(350, globalThis.window.innerWidth - 40) : 400), 
-        height: isWidget && isMobile ? 140 : (isMobile ? 300 : 350)
+        width: isWidget && isMobile ? 180 : (isMobile ? Math.min(350, globalThis.window.innerWidth - 40) : 400), 
+        height: isWidget && isMobile ? 160 : (isMobile ? 300 : 350)
       },
       zIndex: highestZIndex + 1
     };

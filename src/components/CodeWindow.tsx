@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
@@ -110,7 +111,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
       });
     } else if (isResizing && windowRef.current) {
       const rect = windowRef.current.getBoundingClientRect();
-      const newWidth = Math.max(isMobile ? 120 : 300, Math.min(globalThis.window.innerWidth - rect.left, clientX - rect.left + 10));
+      const newWidth = Math.max(isMobile ? 140 : 300, Math.min(globalThis.window.innerWidth - rect.left, clientX - rect.left + 10));
       const newHeight = Math.max(120, Math.min(globalThis.window.innerHeight - rect.top, clientY - rect.top + 10));
       
       onUpdate(codeWindow.id, {
@@ -163,30 +164,20 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
   const canRun = ['javascript', 'python', 'html', 'css'].includes(codeWindow.language);
   const canPreview = ['html', 'css', 'javascript'].includes(codeWindow.language);
 
-  // Add handler for custom resize events from pinch gestures
-  useEffect(() => {
-    const handleWidgetResize = (e: CustomEvent) => {
-      if (isMobile && codeWindow.size.width < 200) {
-        onUpdate(codeWindow.id, {
-          size: { width: e.detail.width, height: e.detail.height }
-        });
-      }
-    };
-
-    window.addEventListener('widgetResize', handleWidgetResize as EventListener);
-    return () => {
-      window.removeEventListener('widgetResize', handleWidgetResize as EventListener);
-    };
-  }, [codeWindow.id, onUpdate, isMobile, codeWindow.size.width]);
+  // Handle widget resize from MobileWidget component
+  const handleWidgetResize = useCallback((newSize: { width: number; height: number }) => {
+    onUpdate(codeWindow.id, { size: newSize });
+  }, [codeWindow.id, onUpdate]);
 
   // Mobile widget mode - smaller, simplified interface
-  if (isMobile && codeWindow.size.width < 200) {
+  if (isMobile && codeWindow.size.width < 300) {
     return (
       <>
         <MobileWidget
           title={codeWindow.title}
           langIcon={lang.icon}
           langName={lang.name}
+          code={codeWindow.code}
           position={codeWindow.position}
           size={codeWindow.size}
           zIndex={codeWindow.zIndex}
@@ -196,8 +187,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
           onDelete={() => onDelete(codeWindow.id)}
           onMouseDown={(e) => handleStart(e, 'drag')}
           onTouchStart={(e) => handleStart(e, 'drag')}
-          onResizeMouseDown={(e) => handleStart(e, 'resize')}
-          onResizeTouchStart={(e) => handleStart(e, 'resize')}
+          onResize={handleWidgetResize}
         />
 
         <MobileCodeEditor
