@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Plus, Play, Code, Smartphone, Monitor, Menu, ChevronDown, Settings, X, Eye, Move } from 'lucide-react';
+import { Plus, Play, Code, Smartphone, Monitor, Menu, ChevronDown, Settings, X, Eye, Move, Home, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CodeWindow from '@/components/CodeWindow';
 import CanvasBackground from '@/components/CanvasBackground';
@@ -48,6 +48,37 @@ const MenuDropdown = ({ title, items, onItemClick, isOpen, onToggle }) => (
   </div>
 );
 
+const HamburgerMenu = ({ isOpen, onToggle, onItemClick }) => (
+  <div className="relative">
+    <Button
+      onClick={onToggle}
+      variant="ghost"
+      size="sm"
+      className="p-2 hover:bg-gray-100 touch-manipulation min-h-[44px]"
+    >
+      <Menu className="w-5 h-5" />
+    </Button>
+    {isOpen && (
+      <div className="absolute top-full left-0 bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[200px]">
+        <button
+          onClick={() => onItemClick('dashboard')}
+          className="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 touch-manipulation min-h-[44px] flex items-center gap-3"
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span>Dashboard</span>
+        </button>
+        <button
+          onClick={() => onItemClick('settings')}
+          className="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 touch-manipulation min-h-[44px] flex items-center gap-3"
+        >
+          <Settings className="w-4 h-4" />
+          <span>Settings</span>
+        </button>
+      </div>
+    )}
+  </div>
+);
+
 const Index = () => {
   const [windows, setWindows] = useState<CodeWindowType[]>([]);
   const [isNewWindowOpen, setIsNewWindowOpen] = useState(false);
@@ -58,6 +89,7 @@ const Index = () => {
   const [nextId, setNextId] = useState(1);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [hamburgerMenuOpen, setHamburgerMenuOpen] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -138,21 +170,27 @@ const Index = () => {
   }, [highestZIndex, nextId, isMobile]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    // Prevent interference with widget interactions
     if (e.target === e.currentTarget) {
       setActiveDropdown(null);
+      setHamburgerMenuOpen(false);
     }
   }, []);
 
   const handleCanvasTouch = useCallback((e: React.TouchEvent) => {
-    // Only handle if touching the canvas directly, not a widget
     if (e.target === e.currentTarget && isMobile) {
       setActiveDropdown(null);
+      setHamburgerMenuOpen(false);
     }
   }, [isMobile]);
 
   const toggleDropdown = (dropdown: string) => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
+  };
+
+  const handleHamburgerMenuClick = (item: string) => {
+    console.log(`${item} clicked`);
+    setHamburgerMenuOpen(false);
+    // Add functionality for dashboard and settings here
   };
 
   const fileMenuItems = [
@@ -175,6 +213,11 @@ const Index = () => {
           <div className="px-4 py-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
+                <HamburgerMenu
+                  isOpen={hamburgerMenuOpen}
+                  onToggle={() => setHamburgerMenuOpen(!hamburgerMenuOpen)}
+                  onItemClick={handleHamburgerMenuClick}
+                />
                 <Code className="w-6 h-6 text-blue-600" />
                 <h1 className="text-lg font-bold text-gray-900">Code Studio</h1>
               </div>
@@ -201,11 +244,16 @@ const Index = () => {
             </div>
           </div>
         ) : (
-          // Desktop Menu (keep existing)
+          // Desktop Menu
           <div className="px-6 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
+                  <HamburgerMenu
+                    isOpen={hamburgerMenuOpen}
+                    onToggle={() => setHamburgerMenuOpen(!hamburgerMenuOpen)}
+                    onItemClick={handleHamburgerMenuClick}
+                  />
                   <Code className="w-6 h-6 text-blue-600" />
                   <h1 className="text-xl font-bold text-gray-900">Interactive Coding Playground</h1>
                 </div>

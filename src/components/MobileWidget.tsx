@@ -62,17 +62,16 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    if ('touches' in e) {
-      if (e.touches.length === 2) {
-        // Pinch gesture
-        setIsResizing(true);
-        setInitialPinchDistance(getDistance(e.touches[0], e.touches[1]));
-        setInitialSize({ width: size.width, height: size.height });
-      } else {
-        // Single touch resize
-        onResizeTouchStart(e);
-      }
+    if ('touches' in e && e.touches.length === 2) {
+      // Pinch gesture detected
+      setIsResizing(true);
+      setInitialPinchDistance(getDistance(e.touches[0], e.touches[1]));
+      setInitialSize({ width: size.width, height: size.height });
+    } else if ('touches' in e && e.touches.length === 1) {
+      // Single touch resize
+      onResizeTouchStart(e);
     } else {
+      // Mouse resize
       onResizeMouseDown(e);
     }
   };
@@ -95,7 +94,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
     window.dispatchEvent(resizeEvent);
   };
 
-  const handleTouchEnd = (e: TouchEvent) => {
+  const handleTouchEnd = () => {
     if (isResizing) {
       setIsResizing(false);
       setInitialPinchDistance(0);
@@ -103,14 +102,27 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
     }
   };
 
+  // Handle touch events on the widget itself for pinch gestures
+  const handleWidgetTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      setIsResizing(true);
+      setInitialPinchDistance(getDistance(e.touches[0], e.touches[1]));
+      setInitialSize({ width: size.width, height: size.height });
+    }
+  };
+
   React.useEffect(() => {
     if (isResizing) {
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('touchend', handleTouchEnd);
+      const handleMove = (e: TouchEvent) => handleTouchMove(e);
+      const handleEnd = () => handleTouchEnd();
+      
+      document.addEventListener('touchmove', handleMove, { passive: false });
+      document.addEventListener('touchend', handleEnd);
       
       return () => {
-        document.removeEventListener('touchmove', handleTouchMove);
-        document.removeEventListener('touchend', handleTouchEnd);
+        document.removeEventListener('touchmove', handleMove);
+        document.removeEventListener('touchend', handleEnd);
       };
     }
   }, [isResizing, initialPinchDistance, initialSize]);
@@ -136,6 +148,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
         transform: isDragging ? 'scale(1.05)' : isResizing ? 'scale(1.02)' : 'scale(1)',
         transition: (isDragging || isResizing) ? 'none' : 'transform 0.2s ease-out, box-shadow 0.2s ease-out'
       }}
+      onTouchStart={handleWidgetTouchStart}
     >
       {/* Widget Header - Drag Area */}
       <div
@@ -160,7 +173,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
         </Button>
       </div>
 
-      {/* Widget Content - Always show edit button prominently */}
+      {/* Widget Content */}
       <div className="p-3 flex flex-col items-center justify-center h-full bg-gray-50 relative">
         <span className="text-2xl mb-2 pointer-events-none">{langIcon}</span>
         <span className="text-xs text-gray-600 text-center mb-3 pointer-events-none">{langName}</span>
@@ -178,21 +191,21 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
         </Button>
       </div>
 
-      {/* Widget Resize Handle - Enhanced for pinch */}
+      {/* Enhanced Resize Handle */}
       <div
         ref={resizeRef}
-        className={`absolute bottom-0 right-0 w-12 h-12 cursor-se-resize z-20 touch-manipulation ${
-          isResizing ? 'bg-blue-100 rounded-tl-lg' : ''
-        } flex items-center justify-center`}
+        className={`absolute bottom-0 right-0 w-16 h-16 cursor-se-resize z-20 touch-manipulation ${
+          isResizing ? 'bg-blue-100 rounded-tl-lg' : 'bg-gray-100/50 hover:bg-gray-100'
+        } flex items-center justify-center transition-colors`}
         onMouseDown={handleResizeStart}
         onTouchStart={handleResizeStart}
         style={{ touchAction: 'none' }}
       >
-        <GripHorizontal className={`w-5 h-5 text-gray-400 transform rotate-45 ${
+        <GripHorizontal className={`w-6 h-6 text-gray-400 transform rotate-45 ${
           isResizing ? 'text-blue-600' : ''
         } transition-colors pointer-events-none`} />
         {isResizing && (
-          <div className="absolute -top-8 -left-16 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+          <div className="absolute -top-8 -left-20 bg-blue-600 text-white text-xs px-3 py-1 rounded whitespace-nowrap">
             Pinch to resize
           </div>
         )}
