@@ -163,6 +163,22 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
   const canRun = ['javascript', 'python', 'html', 'css'].includes(codeWindow.language);
   const canPreview = ['html', 'css', 'javascript'].includes(codeWindow.language);
 
+  // Add handler for custom resize events from pinch gestures
+  useEffect(() => {
+    const handleWidgetResize = (e: CustomEvent) => {
+      if (isMobile && codeWindow.size.width < 200) {
+        onUpdate(codeWindow.id, {
+          size: { width: e.detail.width, height: e.detail.height }
+        });
+      }
+    };
+
+    window.addEventListener('widgetResize', handleWidgetResize as EventListener);
+    return () => {
+      window.removeEventListener('widgetResize', handleWidgetResize as EventListener);
+    };
+  }, [codeWindow.id, onUpdate, isMobile, codeWindow.size.width]);
+
   // Mobile widget mode - smaller, simplified interface
   if (isMobile && codeWindow.size.width < 200) {
     return (
