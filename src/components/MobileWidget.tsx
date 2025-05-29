@@ -52,7 +52,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
     }
   };
 
-  const getDistance = (touch1: Touch, touch2: Touch) => {
+  const getDistance = (touch1: React.Touch, touch2: React.Touch) => {
     const dx = touch1.clientX - touch2.clientX;
     const dy = touch1.clientY - touch2.clientY;
     return Math.sqrt(dx * dx + dy * dy);
@@ -81,7 +81,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
     if (!isResizing || e.touches.length !== 2) return;
     
     e.preventDefault();
-    const currentDistance = getDistance(e.touches[0], e.touches[1]);
+    const currentDistance = getDistance(e.touches[0] as React.Touch, e.touches[1] as React.Touch);
     const scale = currentDistance / initialPinchDistance;
     
     // Calculate new size with constraints
