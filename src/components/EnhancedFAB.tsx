@@ -1,29 +1,15 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { LANGUAGE_CONFIG } from '@/config/languages';
+import { triggerHapticFeedback, useOptimizedEventHandler } from '@/utils/performance';
 
 interface EnhancedFABProps {
   onCreateWindow: (language: string) => void;
 }
 
-const LANGUAGES = {
-  html: { name: 'HTML', color: '#E34F26', icon: '🌐', textColor: 'white' },
-  css: { name: 'CSS', color: '#1572B6', icon: '🎨', textColor: 'white' },
-  javascript: { name: 'JavaScript', color: '#F7DF1E', icon: '⚡', textColor: 'black' },
-  react: { name: 'React', color: '#61DAFB', icon: '⚛️', textColor: 'black' },
-  vue: { name: 'Vue', color: '#4FC08D', icon: '💚', textColor: 'white' },
-  python: { name: 'Python', color: '#3776AB', icon: '🐍', textColor: 'white' },
-  java: { name: 'Java', color: '#007396', icon: '☕', textColor: 'white' },
-  cpp: { name: 'C++', color: '#00599C', icon: '⚙️', textColor: 'white' },
-  php: { name: 'PHP', color: '#777BB4', icon: '🐘', textColor: 'white' },
-  swift: { name: 'Swift', color: '#FA7343', icon: '🦉', textColor: 'white' },
-  go: { name: 'Go', color: '#00ADD8', icon: '🐹', textColor: 'white' },
-  rust: { name: 'Rust', color: '#000000', icon: '🦀', textColor: 'white' },
-  sql: { name: 'SQL', color: '#336791', icon: '🗃️', textColor: 'white' }
-};
-
-const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
+const EnhancedFAB: React.FC<EnhancedFABProps> = memo(({ onCreateWindow }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -33,8 +19,10 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
     setIsVisible(true);
   }, [onCreateWindow]);
 
-  const handleLanguageSelect = (languageKey: string) => {
+  const handleLanguageSelect = useOptimizedEventHandler((languageKey: string) => {
     console.log(`FAB: Creating window for language: ${languageKey}`);
+    
+    triggerHapticFeedback('medium');
     
     if (onCreateWindow && typeof onCreateWindow === 'function') {
       try {
@@ -47,12 +35,18 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
       console.error('FAB: onCreateWindow is not a function:', onCreateWindow);
     }
     setIsExpanded(false);
-  };
+  }, [onCreateWindow]);
 
-  const handleToggle = () => {
+  const handleToggle = useOptimizedEventHandler(() => {
     console.log('FAB: Toggle clicked, current isExpanded:', isExpanded);
+    triggerHapticFeedback('light');
     setIsExpanded(!isExpanded);
-  };
+  }, [isExpanded]);
+
+  const handleBackdropClick = useOptimizedEventHandler(() => {
+    console.log('FAB: Backdrop clicked');
+    setIsExpanded(false);
+  }, []);
 
   if (!isVisible) {
     console.log('FAB: Not visible, returning null');
@@ -61,8 +55,7 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
 
   console.log('FAB: Rendering, isExpanded:', isExpanded);
 
-  // Create array of languages in reverse order for bottom-to-top animation
-  const languageEntries = Object.entries(LANGUAGES);
+  const languageEntries = Object.entries(LANGUAGE_CONFIG);
 
   return (
     <div style={{
@@ -85,10 +78,7 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
             backdropFilter: 'blur(2px)',
             zIndex: -1
           }}
-          onClick={() => {
-            console.log('FAB: Backdrop clicked');
-            setIsExpanded(false);
-          }}
+          onClick={handleBackdropClick}
         />
       )}
 
@@ -109,40 +99,39 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
           ref={scrollContainerRef}
           style={{
             display: 'flex',
-            flexDirection: 'column-reverse', // This reverses the order for bottom-to-top
+            flexDirection: 'column-reverse',
             gap: '8px',
             alignItems: 'stretch',
             paddingTop: '8px'
           }}
         >
-          {languageEntries.map(([key, lang], index) => (
-            <div
-              key={key}
-              style={{
-                transform: `translateY(${isExpanded ? '0' : '30px'})`,
-                opacity: isExpanded ? 1 : 0,
-                transition: `all 0.4s cubic-bezier(0.4, 0, 0.2, 1)`,
-                // Reverse the delay calculation for bottom-to-top effect
-                transitionDelay: isExpanded ? `${(languageEntries.length - index - 1) * 50}ms` : '0ms'
-              }}
-            >
-              <Button
-                onClick={() => {
-                  console.log(`FAB: Language pill clicked: ${key}`);
-                  handleLanguageSelect(key);
-                }}
-                className="w-full h-12 px-4 rounded-xl shadow-lg border-2 border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:shadow-xl hover:border-white/40 text-left justify-start"
+          {languageEntries.map(([key, lang], index) => {
+            const IconComponent = lang.icon;
+            return (
+              <div
+                key={key}
                 style={{
-                  backgroundColor: lang.color,
-                  color: lang.textColor,
-                  fontWeight: '500'
+                  transform: `translateY(${isExpanded ? '0' : '30px'})`,
+                  opacity: isExpanded ? 1 : 0,
+                  transition: `all 0.4s cubic-bezier(0.4, 0, 0.2, 1)`,
+                  transitionDelay: isExpanded ? `${(languageEntries.length - index - 1) * 50}ms` : '0ms'
                 }}
               >
-                <span className="mr-3 text-lg">{lang.icon}</span>
-                <span>{lang.name}</span>
-              </Button>
-            </div>
-          ))}
+                <Button
+                  onClick={() => handleLanguageSelect(key)}
+                  className="w-full h-12 px-4 rounded-xl shadow-lg border-2 border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:shadow-xl hover:border-white/40 text-left justify-start"
+                  style={{
+                    backgroundColor: lang.color,
+                    color: lang.textColor,
+                    fontWeight: '500'
+                  }}
+                >
+                  <IconComponent className="mr-3 w-5 h-5" />
+                  <span>{lang.name}</span>
+                </Button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -187,6 +176,8 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
       )}
     </div>
   );
-};
+});
+
+EnhancedFAB.displayName = 'EnhancedFAB';
 
 export default EnhancedFAB;

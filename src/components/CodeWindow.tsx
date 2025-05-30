@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
 import CodePreview from './CodePreview';
@@ -6,6 +6,12 @@ import MobileCodeEditor from './MobileCodeEditor';
 import WindowHeader from './WindowHeader';
 import MobileWidget from './MobileWidget';
 import WindowResizeHandle from './WindowResizeHandle';
+import { getLanguageConfig } from '@/config/languages';
+import { 
+  triggerHapticFeedback, 
+  useOptimizedEventHandler, 
+  useDebouncedCallback 
+} from '@/utils/performance';
 
 interface CodeWindowProps {
   window: CodeWindowType;
@@ -15,23 +21,7 @@ interface CodeWindowProps {
   onEdit?: (id: string) => void;
 }
 
-const LANGUAGES = {
-  javascript: { name: 'JavaScript', color: '#F7DF1E', icon: '⚡' },
-  python: { name: 'Python', color: '#3776AB', icon: '🐍' },
-  html: { name: 'HTML', color: '#E34F26', icon: '🌐' },
-  css: { name: 'CSS', color: '#1572B6', icon: '🎨' },
-  react: { name: 'React', color: '#61DAFB', icon: '⚛️' },
-  vue: { name: 'Vue', color: '#4FC08D', icon: '💚' },
-  java: { name: 'Java', color: '#007396', icon: '☕' },
-  cpp: { name: 'C++', color: '#00599C', icon: '⚙️' },
-  php: { name: 'PHP', color: '#777BB4', icon: '🐘' },
-  swift: { name: 'Swift', color: '#FA7343', icon: '🦉' },
-  go: { name: 'Go', color: '#00ADD8', icon: '🐹' },
-  rust: { name: 'Rust', color: '#000000', icon: '🦀' },
-  sql: { name: 'SQL', color: '#336791', icon: '🗃️' }
-};
-
-const CodeWindow: React.FC<CodeWindowProps> = ({
+const CodeWindow: React.FC<CodeWindowProps> = memo(({
   window: codeWindow,
   onUpdate,
   onBringToFront,
@@ -51,12 +41,13 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
   const windowRef = useRef<HTMLDivElement>(null);
   const windowIdRef = useRef(codeWindow.id);
 
+  const langConfig = getLanguageConfig(codeWindow.language);
+
   // Keep track of window identity to prevent state mixing
   useEffect(() => {
     if (windowIdRef.current !== codeWindow.id) {
       console.log(`Window ID changed from ${windowIdRef.current} to ${codeWindow.id}`);
       windowIdRef.current = codeWindow.id;
-      // Reset state when window ID changes
       setIsMaximized(false);
       setShowPreview(false);
       setMobileEditorOpen(false);
@@ -72,27 +63,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     return () => globalThis.window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Updated language colors to match the new design
-  const languageColors = {
-    javascript: 'border-yellow-400 bg-yellow-50',
-    html: 'border-orange-400 bg-orange-50',
-    css: 'border-blue-400 bg-blue-50',
-    react: 'border-cyan-400 bg-cyan-50',
-    vue: 'border-green-400 bg-green-50',
-    python: 'border-blue-600 bg-blue-50',
-    java: 'border-blue-700 bg-blue-50',
-    cpp: 'border-blue-800 bg-blue-50',
-    php: 'border-purple-500 bg-purple-50',
-    swift: 'border-orange-500 bg-orange-50',
-    go: 'border-cyan-500 bg-cyan-50',
-    rust: 'border-gray-800 bg-gray-50',
-    sql: 'border-blue-700 bg-blue-50'
-  };
-
-  const languageColor = languageColors[codeWindow.language as keyof typeof languageColors] || 'border-gray-400 bg-gray-50';
-  const lang = LANGUAGES[codeWindow.language as keyof typeof LANGUAGES] || { name: codeWindow.language, color: '#666', icon: '📄' };
-
-  const handleStart = useCallback((e: React.MouseEvent | React.TouchEvent, action: 'drag' | 'resize') => {
+  const handleStart = useOptimizedEventHandler((e: React.MouseEvent | React.TouchEvent, action: 'drag' | 'resize') => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -100,6 +71,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     
     onBringToFront(codeWindow.id);
+    triggerHapticFeedback('light');
     
     if (action === 'drag') {
       setIsDragging(true);
@@ -115,7 +87,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     }
   }, [codeWindow.id, onBringToFront]);
 
-  const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
+  const handleMove = useDebouncedCallback((e: MouseEvent | TouchEvent) => {
     if (!isDragging && !isResizing) return;
     
     e.preventDefault();
@@ -138,27 +110,25 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
         size: { width: newWidth, height: newHeight }
       });
     }
-  }, [isDragging, isResizing, dragOffset, codeWindow.id, onUpdate, isMobile, isMaximized]);
+  }, 16, [isDragging, isResizing, dragOffset, codeWindow.id, onUpdate, isMobile, isMaximized]);
 
-  const handleEnd = useCallback(() => {
+  const handleEnd = useOptimizedEventHandler(() => {
     setIsDragging(false);
     setIsResizing(false);
   }, []);
 
-  const toggleMaximize = useCallback(() => {
+  const toggleMaximize = useOptimizedEventHandler(() => {
+    triggerHapticFeedback('medium');
     if (isMaximized) {
-      // Restore to previous size and position
       onUpdate(codeWindow.id, {
         size: previousSize,
         position: previousPosition
       });
       setIsMaximized(false);
     } else {
-      // Save current size and position
       setPreviousSize(codeWindow.size);
       setPreviousPosition(codeWindow.position);
       
-      // Maximize
       onUpdate(codeWindow.id, {
         size: { 
           width: globalThis.window.innerWidth - 40, 
@@ -187,26 +157,29 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     };
   }, [isDragging, isResizing, handleMove, handleEnd]);
 
-  const handleCodeChange = useCallback((newCode: string) => {
+  const handleCodeChange = useDebouncedCallback((newCode: string) => {
     onUpdate(codeWindow.id, { code: newCode });
-  }, [codeWindow.id, onUpdate]);
+  }, 100, [codeWindow.id, onUpdate]);
 
-  const handleRunCode = useCallback(() => {
+  const handleRunCode = useOptimizedEventHandler(() => {
     console.log(`Running ${codeWindow.language} code:`, codeWindow.code);
-    if (['html', 'css', 'javascript', 'react'].includes(codeWindow.language)) {
+    triggerHapticFeedback('medium');
+    if (langConfig.previewable) {
       setShowPreview(true);
       setPreviewKey(prev => prev + 1);
     }
-  }, [codeWindow.language, codeWindow.code]);
+  }, [codeWindow.language, codeWindow.code, langConfig.previewable]);
 
-  const handleTogglePreview = useCallback(() => {
+  const handleTogglePreview = useOptimizedEventHandler(() => {
     setShowPreview(!showPreview);
     if (!showPreview) {
       setPreviewKey(prev => prev + 1);
     }
+    triggerHapticFeedback('light');
   }, [showPreview]);
 
-  const handleEdit = useCallback(() => {
+  const handleEdit = useOptimizedEventHandler(() => {
+    triggerHapticFeedback('medium');
     if (onEdit) {
       onEdit(codeWindow.id);
     } else {
@@ -214,13 +187,9 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     }
   }, [codeWindow.id, onEdit]);
 
-  const canRun = ['javascript', 'python', 'html', 'css'].includes(codeWindow.language);
-  const canPreview = ['html', 'css', 'javascript', 'react'].includes(codeWindow.language);
-
-  // Handle widget resize from MobileWidget component
-  const handleWidgetResize = useCallback((newSize: { width: number; height: number }) => {
+  const handleWidgetResize = useDebouncedCallback((newSize: { width: number; height: number }) => {
     onUpdate(codeWindow.id, { size: newSize });
-  }, [codeWindow.id, onUpdate]);
+  }, 50, [codeWindow.id, onUpdate]);
 
   // Mobile widget mode - smaller, simplified interface
   if (isMobile && codeWindow.size.width < 300) {
@@ -228,13 +197,13 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
       <>
         <MobileWidget
           title={codeWindow.title}
-          langIcon={lang.icon}
-          langName={lang.name}
+          langIcon={langConfig.name}
+          langName={langConfig.name}
           code={codeWindow.code}
           position={codeWindow.position}
           size={codeWindow.size}
           zIndex={codeWindow.zIndex}
-          languageColor={languageColor}
+          languageColor={langConfig.borderColor}
           isDragging={isDragging}
           onEdit={handleEdit}
           onDelete={() => onDelete(codeWindow.id)}
@@ -259,7 +228,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
   return (
     <div
       ref={windowRef}
-      className={`absolute bg-white rounded-lg shadow-xl border-2 ${languageColor} ${
+      className={`absolute bg-white rounded-lg shadow-xl border-2 ${langConfig.borderColor} ${
         isDragging ? 'cursor-grabbing shadow-2xl scale-105' : 'cursor-grab'
       } select-none overflow-hidden transition-all duration-200`}
       style={{
@@ -274,12 +243,12 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
       <WindowHeader
         title={codeWindow.title}
         language={codeWindow.language}
-        langColor={lang.color}
-        langIcon={lang.icon}
+        langColor={langConfig.color}
+        langIcon={langConfig.name}
         isMobile={isMobile}
         showPreview={showPreview}
-        canRun={canRun}
-        canPreview={canPreview}
+        canRun={langConfig.runnable}
+        canPreview={langConfig.previewable}
         onRun={handleRunCode}
         onTogglePreview={handleTogglePreview}
         onDelete={() => onDelete(codeWindow.id)}
@@ -300,7 +269,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
           />
         </div>
         
-        {showPreview && canPreview && (
+        {showPreview && langConfig.previewable && (
           <div className="h-1/2 border-t border-gray-200">
             <CodePreview
               key={previewKey}
@@ -320,6 +289,8 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
       )}
     </div>
   );
-};
+});
+
+CodeWindow.displayName = 'CodeWindow';
 
 export default CodeWindow;

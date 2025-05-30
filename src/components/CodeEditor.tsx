@@ -1,5 +1,7 @@
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, memo } from 'react';
+import { getLanguageComment } from '@/config/languages';
+import { useDebouncedCallback } from '@/utils/performance';
 
 interface CodeEditorProps {
   language: string;
@@ -7,7 +9,7 @@ interface CodeEditorProps {
   onChange: (code: string) => void;
 }
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ language, code, onChange }) => {
+const CodeEditor: React.FC<CodeEditorProps> = memo(({ language, code, onChange }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [lineNumbers, setLineNumbers] = useState<number[]>([]);
   const [isMobile, setIsMobile] = useState(false);
@@ -26,8 +28,12 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ language, code, onChange }) => 
     setLineNumbers(Array.from({ length: lines.length }, (_, i) => i + 1));
   }, [code]);
 
+  const debouncedOnChange = useDebouncedCallback((newCode: string) => {
+    onChange(newCode);
+  }, 100, [onChange]);
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onChange(e.target.value);
+    debouncedOnChange(e.target.value);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -43,37 +49,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ language, code, onChange }) => 
       setTimeout(() => {
         textarea.selectionStart = textarea.selectionEnd = start + 2;
       }, 0);
-    }
-  };
-
-  const getLanguageComment = () => {
-    switch (language) {
-      case 'javascript':
-        return '// JavaScript code here...';
-      case 'html':
-        return '<!-- HTML markup here -->';
-      case 'css':
-        return '/* CSS styles here */';
-      case 'python':
-        return '# Python code here...';
-      case 'java':
-        return '// Java code here...';
-      case 'cpp':
-        return '// C++ code here...';
-      case 'react':
-        return '// React component here...';
-      case 'php':
-        return '<?php // PHP code here... ?>';
-      case 'swift':
-        return '// Swift code here...';
-      case 'go':
-        return '// Go code here...';
-      case 'rust':
-        return '// Rust code here...';
-      case 'sql':
-        return '-- SQL queries here...';
-      default:
-        return '// Code here...';
     }
   };
 
@@ -96,23 +71,25 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ language, code, onChange }) => 
         value={code}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        placeholder={getLanguageComment()}
+        placeholder={getLanguageComment(language)}
         className={`absolute inset-0 ${isMobile ? 'pl-4' : 'pl-14'} pr-4 py-2 bg-transparent text-white font-mono resize-none outline-none`}
         style={{
           lineHeight: '1.5',
           tabSize: 2,
-          fontSize: isMobile ? '16px' : '14px', // Prevent zoom on iOS
-          WebkitAppearance: 'none', // Remove iOS styling
-          borderRadius: 0 // Remove iOS border radius
+          fontSize: isMobile ? '16px' : '14px',
+          WebkitAppearance: 'none',
+          borderRadius: 0
         }}
         spellCheck={false}
         autoCapitalize="off"
         autoCorrect="off"
         autoComplete="off"
-        data-gramm="false" // Disable Grammarly
+        data-gramm="false"
       />
     </div>
   );
-};
+});
+
+CodeEditor.displayName = 'CodeEditor';
 
 export default CodeEditor;
