@@ -1,4 +1,3 @@
-
 import { 
   Globe, 
   Palette, 
@@ -10,7 +9,7 @@ import {
   Settings, 
   Smartphone, 
   Rabbit, 
-  Crab, 
+  Wrench, 
   Database 
 } from 'lucide-react';
 
@@ -141,7 +140,7 @@ export const LANGUAGE_CONFIG: Record<string, LanguageConfig> = {
     color: '#000000',
     bgColor: 'bg-gray-800',
     textColor: 'white',
-    icon: Crab,
+    icon: Wrench,
     borderColor: 'border-gray-800 bg-gray-50',
     previewable: false,
     runnable: false
