@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { X, Edit3, GripHorizontal, Eye, Code2, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CodePreviewMini from './CodePreviewMini';
+import { useLongPress } from '@/hooks/useLongPress';
 
 interface MobileWidgetProps {
   title: string;
@@ -41,13 +42,77 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
   const [initialSize, setInitialSize] = useState({ width: 0, height: 0 });
   const [showCodePreview, setShowCodePreview] = useState(true);
   const [resizeStartPos, setResizeStartPos] = useState({ x: 0, y: 0 });
+  const [canDrag, setCanDrag] = useState(false);
+  const [longPressActive, setLongPressActive] = useState(false);
   const resizeRef = useRef<HTMLDivElement>(null);
+
+  const longPressOptions = {
+    delay: 750,
+    onLongPress: () => {
+      console.log('Long press detected - enabling drag');
+      setCanDrag(true);
+      // Add haptic feedback for mobile
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+    },
+    onLongPressStart: () => {
+      setLongPressActive(true);
+    },
+    onLongPressEnd: () => {
+      setLongPressActive(false);
+    },
+  };
+
+  const longPress = useLongPress(longPressOptions);
 
   const getDistance = (touch1: React.Touch, touch2: React.Touch) => {
     const dx = touch1.clientX - touch2.clientX;
     const dy = touch1.clientY - touch2.clientY;
     return Math.sqrt(dx * dx + dy * dy);
   };
+
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!canDrag) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if ('touches' in e) {
+      if (e.touches.length === 1) {
+        onTouchStart(e);
+      } else if (e.touches.length === 2) {
+        setIsResizing(true);
+        setInitialPinchDistance(getDistance(e.touches[0], e.touches[1]));
+        setInitialSize({ width: size.width, height: size.height });
+      }
+    } else {
+      onMouseDown(e);
+    }
+  };
+
+  const handleWidgetTouch = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      longPress.handlers.onTouchStart(e);
+      if (canDrag) {
+        handleDragStart(e);
+      }
+    }
+  };
+
+  const handleWidgetMouseDown = (e: React.MouseEvent) => {
+    longPress.handlers.onMouseDown(e);
+    if (canDrag) {
+      handleDragStart(e);
+    }
+  };
+
+  // Reset drag capability when drag ends
+  useEffect(() => {
+    if (!isDragging && canDrag) {
+      setCanDrag(false);
+    }
+  }, [isDragging, canDrag]);
 
   const handleDragMouseStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -62,7 +127,6 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
     if (e.touches.length === 1) {
       onTouchStart(e);
     } else if (e.touches.length === 2) {
-      // Handle pinch gesture for resizing
       setIsResizing(true);
       setInitialPinchDistance(getDistance(e.touches[0], e.touches[1]));
       setInitialSize({ width: size.width, height: size.height });
@@ -111,7 +175,6 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
     e.preventDefault();
     
     if (e.touches.length === 2 && initialPinchDistance > 0) {
-      // Handle pinch gesture
       const currentDistance = getDistance(e.touches[0] as React.Touch, e.touches[1] as React.Touch);
       const scale = currentDistance / initialPinchDistance;
       
@@ -120,7 +183,6 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
       
       onResize({ width: newWidth, height: newHeight });
     } else if (e.touches.length === 1) {
-      // Handle single touch resize
       const deltaX = e.touches[0].clientX - resizeStartPos.x;
       const deltaY = e.touches[0].clientY - resizeStartPos.y;
       
@@ -173,7 +235,6 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
   const lineCount = code.split('\n').length;
   const isLargeWidget = size.width > 200 && size.height > 160;
 
-  // Get proper language colors based on the language
   const getLanguageAccentColor = (language: string) => {
     const colorMap = {
       'JavaScript': '#F7DF1E',
@@ -190,7 +251,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
       'Rust': '#000000',
       'SQL': '#336791'
     };
-    return colorMap[language] || '#6B7280';
+    return colorMap[title] || '#6B7280';
   };
 
   const accentColor = getLanguageAccentColor(title);
@@ -198,8 +259,8 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
   return (
     <div
       className={`absolute bg-white rounded-2xl shadow-xl border-2 ${languageColor} ${
-        isDragging ? 'cursor-grabbing shadow-2xl' : ''
-      } ${isResizing ? 'ring-2 ring-blue-400' : ''} select-none overflow-hidden transition-all duration-200`}
+        isDragging ? 'cursor-grabbing shadow-2xl' : canDrag ? 'cursor-grab' : ''
+      } ${isResizing ? 'ring-2 ring-blue-400' : ''} ${longPressActive ? 'ring-2 ring-purple-400' : ''} select-none overflow-hidden transition-all duration-200`}
       style={{
         left: position.x,
         top: position.y,
@@ -207,16 +268,29 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
         height: Math.max(120, size.height),
         zIndex: isDragging || isResizing ? 9999 : zIndex,
         touchAction: 'none',
-        transform: isDragging ? 'scale(1.05)' : isResizing ? 'scale(1.02)' : 'scale(1)',
+        transform: isDragging ? 'scale(1.05)' : isResizing ? 'scale(1.02)' : longPressActive ? 'scale(1.01)' : 'scale(1)',
         transition: (isDragging || isResizing) ? 'none' : 'transform 0.2s ease-out, box-shadow 0.2s ease-out',
-        borderColor: accentColor
+        borderColor: longPressActive ? '#8B5CF6' : accentColor,
+        boxShadow: longPressActive ? '0 0 20px rgba(139, 92, 246, 0.3)' : undefined
       }}
     >
-      {/* Widget Header - Enhanced with more info */}
+      {/* Long press instruction overlay */}
+      {longPressActive && (
+        <div className="absolute inset-0 bg-purple-500/10 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10 pointer-events-none">
+          <div className="bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium">
+            Long press to drag
+          </div>
+        </div>
+      )}
+
+      {/* Widget Header */}
       <div
-        className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-2 flex items-center justify-between cursor-move active:cursor-grabbing"
-        onMouseDown={handleDragMouseStart}
-        onTouchStart={handleDragTouchStart}
+        className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-2 flex items-center justify-between active:cursor-grabbing"
+        onMouseDown={handleWidgetMouseDown}
+        onTouchStart={handleWidgetTouch}
+        onMouseUp={longPress.handlers.onMouseUp}
+        onMouseLeave={longPress.handlers.onMouseLeave}
+        onTouchEnd={longPress.handlers.onTouchEnd}
         style={{ touchAction: 'none' }}
       >
         <div className="flex items-center gap-1 flex-1 min-w-0">
@@ -286,7 +360,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
           )}
         </div>
         
-        {/* Action Button with language color */}
+        {/* Action Button */}
         <div className="p-2 border-t border-gray-200">
           <Button
             size="sm"
@@ -304,7 +378,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
         </div>
       </div>
 
-      {/* Enhanced Resize Handle with Size Indicator */}
+      {/* Enhanced Resize Handle */}
       <div
         ref={resizeRef}
         className={`absolute bottom-0 right-0 w-12 h-12 cursor-se-resize z-20 touch-manipulation ${

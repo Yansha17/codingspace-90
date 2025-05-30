@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, Play, Eye, Code as CodeIcon, Edit } from 'lucide-react';
+import { X, Play, Eye, EyeOff, Edit3, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface WindowHeaderProps {
@@ -12,10 +12,12 @@ interface WindowHeaderProps {
   showPreview: boolean;
   canRun: boolean;
   canPreview: boolean;
+  isMaximized?: boolean;
   onRun: () => void;
   onTogglePreview: () => void;
   onDelete: () => void;
-  onEdit?: () => void;
+  onEdit: () => void;
+  onMaximize?: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
   onTouchStart: (e: React.TouchEvent) => void;
 }
@@ -29,54 +31,47 @@ const WindowHeader: React.FC<WindowHeaderProps> = ({
   showPreview,
   canRun,
   canPreview,
+  isMaximized = false,
   onRun,
   onTogglePreview,
   onDelete,
   onEdit,
+  onMaximize,
   onMouseDown,
   onTouchStart
 }) => {
   return (
-    <div
-      className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-3 flex items-center justify-between cursor-move touch-none"
+    <div 
+      className="flex items-center justify-between p-3 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50 cursor-move active:cursor-grabbing select-none"
       onMouseDown={onMouseDown}
       onTouchStart={onTouchStart}
+      style={{ touchAction: 'none' }}
     >
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <div className="flex gap-1">
-          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-        </div>
-        <span className="text-sm font-medium text-gray-700 truncate">{title}</span>
-        <span 
-          className={`text-xs px-2 py-1 rounded text-white ${isMobile ? 'hidden' : ''}`}
+      <div className="flex items-center gap-3">
+        <div 
+          className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm"
           style={{ backgroundColor: langColor }}
         >
           {langIcon}
-        </span>
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-800 text-sm">{title}</h3>
+          <p className="text-xs text-gray-500 capitalize">{language}</p>
+        </div>
       </div>
       
-      <div className="flex items-center gap-1 flex-shrink-0">
-        {onEdit && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onEdit}
-            className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} p-0 hover:bg-blue-100 touch-manipulation`}
-          >
-            <Edit className={`${isMobile ? 'w-4 h-4' : 'w-3 h-3'} text-blue-600`} />
-          </Button>
-        )}
-        
+      <div className="flex items-center gap-1">
         {canRun && (
           <Button
             size="sm"
             variant="ghost"
-            onClick={onRun}
-            className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} p-0 hover:bg-green-100 touch-manipulation`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRun();
+            }}
+            className="h-7 px-2 hover:bg-green-100 text-green-600"
           >
-            <Play className={`${isMobile ? 'w-4 h-4' : 'w-3 h-3'} text-green-600`} />
+            <Play className="w-3 h-3" />
           </Button>
         )}
         
@@ -84,24 +79,54 @@ const WindowHeader: React.FC<WindowHeaderProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            onClick={onTogglePreview}
-            className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} p-0 hover:bg-blue-100 touch-manipulation`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onTogglePreview();
+            }}
+            className="h-7 px-2 hover:bg-blue-100 text-blue-600"
           >
-            {showPreview ? (
-              <CodeIcon className={`${isMobile ? 'w-4 h-4' : 'w-3 h-3'} text-blue-600`} />
-            ) : (
-              <Eye className={`${isMobile ? 'w-4 h-4' : 'w-3 h-3'} text-blue-600`} />
-            )}
+            {showPreview ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+          </Button>
+        )}
+        
+        {isMobile && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="h-7 px-2 hover:bg-purple-100 text-purple-600"
+          >
+            <Edit3 className="w-3 h-3" />
+          </Button>
+        )}
+
+        {onMaximize && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onMaximize();
+            }}
+            className="h-7 px-2 hover:bg-gray-100 text-gray-600"
+          >
+            {isMaximized ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
           </Button>
         )}
         
         <Button
           size="sm"
           variant="ghost"
-          onClick={onDelete}
-          className={`${isMobile ? 'h-8 w-8' : 'h-6 w-6'} p-0 hover:bg-red-100 touch-manipulation`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="h-7 px-2 hover:bg-red-100 text-red-600"
         >
-          <X className={`${isMobile ? 'w-4 h-4' : 'w-3 h-3'} text-red-600`} />
+          <X className="w-3 h-3" />
         </Button>
       </div>
     </div>

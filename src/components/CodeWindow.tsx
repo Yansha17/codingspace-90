@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
@@ -46,7 +45,23 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [mobileEditorOpen, setMobileEditorOpen] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [previousSize, setPreviousSize] = useState({ width: 0, height: 0 });
+  const [previousPosition, setPreviousPosition] = useState({ x: 0, y: 0 });
   const windowRef = useRef<HTMLDivElement>(null);
+  const windowIdRef = useRef(codeWindow.id);
+
+  // Keep track of window identity to prevent state mixing
+  useEffect(() => {
+    if (windowIdRef.current !== codeWindow.id) {
+      console.log(`Window ID changed from ${windowIdRef.current} to ${codeWindow.id}`);
+      windowIdRef.current = codeWindow.id;
+      // Reset state when window ID changes
+      setIsMaximized(false);
+      setShowPreview(false);
+      setMobileEditorOpen(false);
+    }
+  }, [codeWindow.id]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -107,14 +122,14 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     
-    if (isDragging) {
+    if (isDragging && !isMaximized) {
       const newX = Math.max(0, Math.min(globalThis.window.innerWidth - 120, clientX - dragOffset.x));
       const newY = Math.max(60, Math.min(globalThis.window.innerHeight - 120, clientY - dragOffset.y));
       
       onUpdate(codeWindow.id, {
         position: { x: newX, y: newY }
       });
-    } else if (isResizing && windowRef.current) {
+    } else if (isResizing && windowRef.current && !isMaximized) {
       const rect = windowRef.current.getBoundingClientRect();
       const newWidth = Math.max(isMobile ? 140 : 300, Math.min(globalThis.window.innerWidth - rect.left, clientX - rect.left + 10));
       const newHeight = Math.max(120, Math.min(globalThis.window.innerHeight - rect.top, clientY - rect.top + 10));
@@ -123,12 +138,37 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
         size: { width: newWidth, height: newHeight }
       });
     }
-  }, [isDragging, isResizing, dragOffset, codeWindow.id, onUpdate, isMobile]);
+  }, [isDragging, isResizing, dragOffset, codeWindow.id, onUpdate, isMobile, isMaximized]);
 
   const handleEnd = useCallback(() => {
     setIsDragging(false);
     setIsResizing(false);
   }, []);
+
+  const toggleMaximize = useCallback(() => {
+    if (isMaximized) {
+      // Restore to previous size and position
+      onUpdate(codeWindow.id, {
+        size: previousSize,
+        position: previousPosition
+      });
+      setIsMaximized(false);
+    } else {
+      // Save current size and position
+      setPreviousSize(codeWindow.size);
+      setPreviousPosition(codeWindow.position);
+      
+      // Maximize
+      onUpdate(codeWindow.id, {
+        size: { 
+          width: globalThis.window.innerWidth - 40, 
+          height: globalThis.window.innerHeight - 120 
+        },
+        position: { x: 20, y: 80 }
+      });
+      setIsMaximized(true);
+    }
+  }, [isMaximized, codeWindow.id, codeWindow.size, codeWindow.position, onUpdate, previousSize, previousPosition]);
 
   useEffect(() => {
     if (isDragging || isResizing) {
@@ -244,6 +284,8 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
         onTogglePreview={handleTogglePreview}
         onDelete={() => onDelete(codeWindow.id)}
         onEdit={handleEdit}
+        onMaximize={toggleMaximize}
+        isMaximized={isMaximized}
         onMouseDown={(e) => handleStart(e, 'drag')}
         onTouchStart={(e) => handleStart(e, 'drag')}
       />
@@ -269,11 +311,13 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
         )}
       </div>
 
-      <WindowResizeHandle
-        isMobile={isMobile}
-        onMouseDown={(e) => handleStart(e, 'resize')}
-        onTouchStart={(e) => handleStart(e, 'resize')}
-      />
+      {!isMaximized && (
+        <WindowResizeHandle
+          isMobile={isMobile}
+          onMouseDown={(e) => handleStart(e, 'resize')}
+          onTouchStart={(e) => handleStart(e, 'resize')}
+        />
+      )}
     </div>
   );
 };
