@@ -60,7 +60,7 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
     
     setIsDragging(true);
     
-    // Calculate offset from click point within the element, not from top-left
+    // Calculate offset from click point within the element
     const rect = elementRef.current?.getBoundingClientRect();
     if (rect) {
       setDragOffset({
@@ -79,7 +79,7 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
     triggerHapticFeedback('medium');
   }, []);
 
-  // Optimized drag handler with proper offset maintenance
+  // Ultra-optimized drag handler with proper offset maintenance
   const handleDragMove = useOptimizedDragHandler((e: MouseEvent | TouchEvent) => {
     if (!isDragging) return;
     
@@ -102,13 +102,13 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
       optimizeTransform(elementRef.current, newX, newY);
     }
     
-    // Debounced state update
+    // Update state immediately for smooth feedback
     actions.onUpdate(window.id, {
       position: { x: newX, y: newY }
     });
   }, [isDragging, dragOffset, window.id, actions.onUpdate]);
 
-  // Optimized resize handler
+  // Ultra-optimized resize handler
   const handleResizeMove = useOptimizedDragHandler((e: MouseEvent | TouchEvent) => {
     if (!isResizing || !elementRef.current || isMaximized) return;
     
@@ -139,9 +139,14 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
   const handleEnd = useCallback(() => {
     setIsDragging(false);
     setIsResizing(false);
+    
+    // Reset will-change for performance
+    if (elementRef.current) {
+      elementRef.current.style.willChange = 'auto';
+    }
   }, []);
 
-  // Global event listeners
+  // Global event listeners with passive optimization
   useEffect(() => {
     if (isDragging || isResizing) {
       const options = { passive: false };
@@ -159,7 +164,7 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
     }
   }, [isDragging, isResizing, handleDragMove, handleEnd]);
 
-  // Standard widget actions
+  // Standard widget actions with faster feedback
   const toggleMaximize = useCallback(() => {
     triggerHapticFeedback('medium');
     if (isMaximized) {
@@ -205,7 +210,7 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
 
   const handleCodeChange = useDebouncedCallback((newCode: string) => {
     actions.onUpdate(window.id, { code: newCode });
-  }, 100, [window.id, actions.onUpdate]);
+  }, 50, [window.id, actions.onUpdate]);
 
   return {
     // State
@@ -227,7 +232,7 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
     handleDelete,
     handleCodeChange,
     
-    // Computed styles
+    // Computed styles with hardware acceleration
     dragStyles: {
       cursor: isDragging ? 'grabbing' : 'grab',
       transform: isDragging ? 'scale(1.02)' : 'scale(1)',
@@ -235,7 +240,10 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
         ? '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(16, 185, 129, 0.3)' 
         : '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
       zIndex: isDragging ? 9999 : window.zIndex,
-      transition: isDragging ? 'none' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+      transition: isDragging ? 'none' : 'all 0.15s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+      willChange: isDragging || isResizing ? 'transform' : 'auto',
+      backfaceVisibility: 'hidden' as const,
+      perspective: '1000px'
     }
   };
 };

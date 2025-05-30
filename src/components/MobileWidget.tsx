@@ -110,8 +110,8 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     <>
       <div
         ref={widgetRef}
-        className={`absolute rounded-xl shadow-2xl border overflow-hidden transition-all duration-300 will-change-transform select-none ${
-          isDragging ? 'cursor-grabbing scale-105 shadow-3xl' : 'cursor-grab'
+        className={`absolute rounded-xl shadow-2xl border overflow-hidden select-none will-change-transform ${
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
         }`}
         style={{
           left: position.x,
@@ -125,7 +125,10 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
           boxShadow: isDragging 
             ? '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(16, 185, 129, 0.3)' 
             : '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)',
-          transform: isDragging ? 'scale(1.02)' : 'scale(1)'
+          transform: isDragging ? 'scale(1.02)' : 'scale(1)',
+          transition: isDragging ? 'none' : 'all 0.15s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+          backfaceVisibility: 'hidden',
+          perspective: '1000px'
         }}
         onMouseDown={handleWidgetMouseDown}
         onTouchStart={handleWidgetTouchStart}
