@@ -102,65 +102,73 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     }
   }, [langName, code, langConfig.previewable, handleTogglePreview]);
 
+  // Enhanced resize handler that works regardless of maximize state
+  const handleResize = useCallback((newSize: { width: number; height: number }) => {
+    onResize(newSize);
+  }, [onResize]);
+
   const currentShowPreview = onTogglePreview ? showPreview : localShowPreview;
   const currentPreviewKey = previewKey || localPreviewKey;
 
+  // Calculate dynamic styles for better performance
+  const widgetStyles = {
+    left: position.x,
+    top: position.y,
+    width: Math.max(140, size.width),
+    height: Math.max(120, size.height),
+    zIndex: isDragging ? 9999 : zIndex,
+    touchAction: 'none' as const,
+    background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+    borderColor: isDragging ? '#10B981' : '#475569',
+    boxShadow: isDragging 
+      ? '0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.2)' 
+      : '0 15px 20px -5px rgba(0, 0, 0, 0.25)',
+    transform: isDragging ? 'scale(1.01)' : 'scale(1)',
+    transition: isDragging ? 'none' : 'all 0.1s ease-out',
+    backfaceVisibility: 'hidden' as const,
+    perspective: '1000px',
+    willChange: isDragging ? 'transform' : 'auto'
+  };
+
   return (
-    <>
-      <div
-        ref={widgetRef}
-        className={`absolute rounded-xl shadow-2xl border overflow-hidden select-none will-change-transform ${
-          isDragging ? 'cursor-grabbing' : 'cursor-grab'
-        }`}
-        style={{
-          left: position.x,
-          top: position.y,
-          width: Math.max(140, size.width),
-          height: Math.max(120, size.height),
-          zIndex: isDragging ? 9999 : zIndex,
-          touchAction: 'none',
-          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-          borderColor: isDragging ? '#10B981' : '#475569',
-          boxShadow: isDragging 
-            ? '0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.2)' 
-            : '0 15px 20px -5px rgba(0, 0, 0, 0.25)',
-          transform: isDragging ? 'scale(1.01)' : 'scale(1)',
-          transition: isDragging ? 'none' : 'all 0.1s ease-out',
-          backfaceVisibility: 'hidden',
-          perspective: '1000px'
-        }}
-        onMouseDown={handleWidgetMouseDown}
-        onTouchStart={handleWidgetTouchStart}
-      >
-        <MobileWidgetHeader
-          title={title}
-          langName={langName}
-          isMaximized={isMaximized}
-          showPreview={currentShowPreview}
-          previewKey={currentPreviewKey}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onTogglePreview={handleTogglePreview}
-          onMaximize={onMaximize}
-          onRun={handleRun}
-        />
+    <div
+      ref={widgetRef}
+      className={`absolute rounded-xl shadow-2xl border overflow-hidden select-none ${
+        isDragging ? 'cursor-grabbing' : 'cursor-grab'
+      }`}
+      style={widgetStyles}
+      onMouseDown={handleWidgetMouseDown}
+      onTouchStart={handleWidgetTouchStart}
+    >
+      <MobileWidgetHeader
+        title={title}
+        langName={langName}
+        isMaximized={isMaximized}
+        showPreview={currentShowPreview}
+        previewKey={currentPreviewKey}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onTogglePreview={handleTogglePreview}
+        onMaximize={onMaximize}
+        onRun={handleRun}
+      />
 
-        <MobileWidgetContent
-          title={title}
-          langName={langName}
-          code={code}
-          size={size}
-          showPreview={currentShowPreview}
-          previewKey={currentPreviewKey}
-        />
+      <MobileWidgetContent
+        title={title}
+        langName={langName}
+        code={code}
+        size={size}
+        showPreview={currentShowPreview}
+        previewKey={currentPreviewKey}
+      />
 
-        {/* Always show resize handle - don't hide when maximized */}
-        <MobileWidgetResizeHandle
-          onResize={onResize}
-          currentSize={size}
-        />
-      </div>
-    </>
+      {/* Always show resize handle - allow resizing even when maximized */}
+      <MobileWidgetResizeHandle
+        onResize={handleResize}
+        currentSize={size}
+        isMaximized={isMaximized}
+      />
+    </div>
   );
 });
 

@@ -1,17 +1,21 @@
 
 import React, { memo, useState, useRef, useEffect, useCallback } from 'react';
+import { optimizeResize, triggerHapticFeedback } from '@/utils/performance';
 
 interface MobileWidgetResizeHandleProps {
   onResize: (size: { width: number; height: number }) => void;
   currentSize: { width: number; height: number };
+  isMaximized?: boolean;
 }
 
 const MobileWidgetResizeHandle: React.FC<MobileWidgetResizeHandleProps> = memo(({
   onResize,
-  currentSize
+  currentSize,
+  isMaximized = false
 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+  const elementRef = useRef<HTMLDivElement>(null);
 
   const handleResizeStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -21,6 +25,8 @@ const MobileWidgetResizeHandle: React.FC<MobileWidgetResizeHandleProps> = memo((
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     
     setIsResizing(true);
+    triggerHapticFeedback('medium');
+    
     resizeStartRef.current = {
       x: clientX,
       y: clientY,
@@ -39,8 +45,20 @@ const MobileWidgetResizeHandle: React.FC<MobileWidgetResizeHandleProps> = memo((
     const deltaX = clientX - resizeStartRef.current.x;
     const deltaY = clientY - resizeStartRef.current.y;
     
-    const newWidth = Math.max(140, resizeStartRef.current.width + deltaX);
-    const newHeight = Math.max(120, resizeStartRef.current.height + deltaY);
+    // Calculate new size with better constraints
+    const minWidth = 140;
+    const minHeight = 120;
+    const maxWidth = window.innerWidth - 40;
+    const maxHeight = window.innerHeight - 120;
+    
+    const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.width + deltaX));
+    const newHeight = Math.max(minHeight, Math.min(maxHeight, resizeStartRef.current.height + deltaY));
+    
+    // Immediate visual feedback with hardware acceleration
+    const parentElement = elementRef.current?.parentElement;
+    if (parentElement) {
+      optimizeResize(parentElement, newWidth, newHeight);
+    }
     
     onResize({ width: newWidth, height: newHeight });
   }, [isResizing, onResize]);
@@ -48,13 +66,20 @@ const MobileWidgetResizeHandle: React.FC<MobileWidgetResizeHandleProps> = memo((
   const handleResizeEnd = useCallback(() => {
     setIsResizing(false);
     resizeStartRef.current = null;
+    
+    // Reset will-change for performance
+    const parentElement = elementRef.current?.parentElement;
+    if (parentElement) {
+      parentElement.style.willChange = 'auto';
+    }
   }, []);
 
   useEffect(() => {
     if (isResizing) {
-      document.addEventListener('mousemove', handleResizeMove, { passive: false });
+      const options = { passive: false };
+      document.addEventListener('mousemove', handleResizeMove, options);
       document.addEventListener('mouseup', handleResizeEnd, { passive: true });
-      document.addEventListener('touchmove', handleResizeMove, { passive: false });
+      document.addEventListener('touchmove', handleResizeMove, options);
       document.addEventListener('touchend', handleResizeEnd, { passive: true });
       
       return () => {
@@ -68,6 +93,7 @@ const MobileWidgetResizeHandle: React.FC<MobileWidgetResizeHandleProps> = memo((
 
   return (
     <div
+      ref={elementRef}
       data-resize-handle="true"
       className={`absolute bottom-2 right-2 w-8 h-8 cursor-se-resize z-30 touch-manipulation ${
         isResizing ? 'bg-blue-500 scale-110' : 'bg-slate-600 hover:bg-slate-500'

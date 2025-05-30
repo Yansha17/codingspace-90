@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronUp, Play, Eye, Code as CodeIcon, Maximize2, Minimize2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Play, Eye, Code as CodeIcon, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -9,6 +9,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import CodePreview from './CodePreview';
+import { getLanguageConfig } from '@/config/languages';
 
 interface MobileCodeEditorProps {
   isOpen: boolean;
@@ -32,6 +33,8 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
   const [previewKey, setPreviewKey] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const langConfig = getLanguageConfig(language);
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(e.target.value);
   };
@@ -54,7 +57,7 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
 
   const handleRunCode = () => {
     console.log(`Running ${language} code:`, code);
-    if (['html', 'css', 'javascript', 'react'].includes(language)) {
+    if (langConfig.previewable) {
       setView('preview');
       setPreviewKey(prev => prev + 1);
     }
@@ -62,7 +65,7 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
 
   const handleViewChange = (newView: 'code' | 'preview' | 'split') => {
     setView(newView);
-    if ((newView === 'preview' || newView === 'split') && ['html', 'css', 'javascript', 'react'].includes(language)) {
+    if ((newView === 'preview' || newView === 'split') && langConfig.previewable) {
       setPreviewKey(prev => prev + 1);
     }
   };
@@ -98,8 +101,6 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
     }
   };
 
-  const canPreview = ['html', 'css', 'javascript', 'react'].includes(language);
-
   // Auto-expand when opened
   useEffect(() => {
     if (isOpen) {
@@ -117,7 +118,7 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
           <SheetHeader className="flex flex-row items-center justify-between p-4 pb-2 border-b border-gray-200">
             <SheetTitle className="text-lg">{title}</SheetTitle>
             <div className="flex items-center gap-2">
-              {/* View Toggle Buttons - Always show these */}
+              {/* View Toggle Buttons - Always show for all languages */}
               <div className="flex items-center bg-gray-200 rounded-lg p-1">
                 <Button
                   size="sm"
@@ -127,30 +128,28 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
                 >
                   <CodeIcon className="w-4 h-4" />
                 </Button>
-                {canPreview && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant={view === 'split' ? 'default' : 'ghost'}
-                      onClick={() => handleViewChange('split')}
-                      className="h-8 px-3 rounded-md transition-all duration-200"
-                    >
-                      <Maximize2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={view === 'preview' ? 'default' : 'ghost'}
-                      onClick={() => handleViewChange('preview')}
-                      className="h-8 px-3 rounded-md transition-all duration-200"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </>
-                )}
+                <Button
+                  size="sm"
+                  variant={view === 'split' ? 'default' : 'ghost'}
+                  onClick={() => handleViewChange('split')}
+                  className="h-8 px-3 rounded-md transition-all duration-200"
+                  disabled={!langConfig.previewable}
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant={view === 'preview' ? 'default' : 'ghost'}
+                  onClick={() => handleViewChange('preview')}
+                  className="h-8 px-3 rounded-md transition-all duration-200"
+                  disabled={!langConfig.previewable}
+                >
+                  <Eye className="w-4 h-4" />
+                </Button>
               </div>
               
               {/* Run Button */}
-              {['javascript', 'python', 'html', 'css', 'react'].includes(language) && (
+              {langConfig.runnable && (
                 <Button
                   size="sm"
                   onClick={handleRunCode}
@@ -205,7 +204,7 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
               </div>
             ) : view === 'preview' ? (
               <div className="h-full">
-                {canPreview ? (
+                {langConfig.previewable ? (
                   <CodePreview 
                     key={previewKey}
                     language={language} 
@@ -250,7 +249,7 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
                   </div>
                 </div>
                 <div className="w-1/2 h-full">
-                  {canPreview ? (
+                  {langConfig.previewable ? (
                     <CodePreview 
                       key={previewKey}
                       language={language} 
