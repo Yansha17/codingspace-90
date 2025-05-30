@@ -11,6 +11,8 @@ import BottomEditor from '@/components/BottomEditor';
 import { CodeWindowType } from '@/types/CodeWindow';
 import { LibraryItem } from '@/types/Library';
 import { useLibrary } from '@/hooks/useLibrary';
+import ThemeToggle from '@/components/ThemeToggle';
+import MobileCodeDrawer from '@/components/MobileCodeDrawer';
 
 const LANGUAGES = {
   javascript: { name: 'JavaScript', color: '#F7DF1E', icon: '⚡' },
@@ -319,9 +321,9 @@ const Index = () => {
   }));
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 relative">
+    <div className="h-screen w-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative">
       {/* Enhanced Header */}
-      <div className="absolute top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+      <div className="absolute top-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
         {isMobile ? (
           // Enhanced Mobile Header
           <div className="px-4 py-3">
@@ -337,16 +339,18 @@ const Index = () => {
                     <Code className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-lg font-bold text-gray-900">Code Studio</h1>
-                    <p className="text-xs text-gray-500">Mobile Playground</p>
+                    <h1 className="text-lg font-bold text-gray-900 dark:text-white">Code Studio</h1>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Mobile Playground</p>
                   </div>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 bg-blue-100 px-2 py-1 rounded-full">
+                <ThemeToggle />
+                
+                <div className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded-full">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs font-medium text-blue-700">
+                  <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
                     {windows.length} widget{windows.length !== 1 ? 's' : ''}
                   </span>
                 </div>
@@ -355,7 +359,7 @@ const Index = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 px-2 border-blue-200 text-blue-600 hover:bg-blue-50"
+                    className="h-8 px-2 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400"
                     onClick={() => toggleDropdown('new')}
                   >
                     <Plus className="w-4 h-4" />
@@ -364,7 +368,7 @@ const Index = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 px-2 border-gray-200 text-gray-600 hover:bg-gray-50"
+                    className="h-8 px-2 border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400"
                     onClick={() => toggleDropdown('settings')}
                   >
                     <SettingsIcon className="w-4 h-4" />
@@ -381,7 +385,7 @@ const Index = () => {
                     key={key}
                     size="sm"
                     variant="outline"
-                    className="h-12 flex flex-col items-center gap-1 text-xs"
+                    className="h-12 flex flex-col items-center gap-1 text-xs dark:border-gray-700 dark:text-gray-300"
                     onClick={() => {
                       addNewWindow(key);
                       setActiveDropdown(null);
@@ -414,21 +418,23 @@ const Index = () => {
                       <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                         Interactive Coding Playground
                       </h1>
-                      <p className="text-sm text-gray-600">Build, test, and share code instantly</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Build, test, and share code instantly</p>
                     </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3 bg-gray-100 px-3 py-2 rounded-lg">
-                  <Monitor className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm font-medium text-gray-700">Desktop View</span>
+                <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg">
+                  <Monitor className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Desktop View</span>
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 </div>
               </div>
               
               <div className="flex items-center gap-4">
+                <ThemeToggle />
+                
                 {/* Stats */}
-                <div className="flex items-center gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                   <div className="flex items-center gap-2">
                     <Globe className="w-4 h-4" />
                     <span>{windows.filter(w => ['html', 'css', 'javascript'].includes(w.language)).length} Web</span>
@@ -445,7 +451,7 @@ const Index = () => {
                     size="sm"
                     variant="outline"
                     onClick={() => setShowLibrary(true)}
-                    className="gap-2 border-purple-200 text-purple-600 hover:bg-purple-50"
+                    className="gap-2 border-purple-200 text-purple-600 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-400"
                   >
                     <Database className="w-4 h-4" />
                     Library
@@ -468,7 +474,7 @@ const Index = () => {
       {/* Canvas */}
       <div 
         ref={canvasRef}
-        className={`absolute inset-0 ${isMobile ? 'pt-20' : 'pt-24'} ${editingWindow ? 'pb-[40vh]' : ''}`}
+        className={`absolute inset-0 ${isMobile ? 'pt-20' : 'pt-24'}`}
         style={{
           transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${canvasScale})`,
           transformOrigin: '0 0',
@@ -495,14 +501,14 @@ const Index = () => {
       {/* Enhanced Welcome State */}
       {windows.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center text-gray-500 max-w-md p-8">
+          <div className="text-center text-gray-500 dark:text-gray-400 max-w-md p-8">
             <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
               <Code className="w-12 h-12 text-white" />
             </div>
             <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               {isMobile ? 'Mobile Code Studio' : 'Interactive Coding Playground'}
             </h2>
-            <p className="text-lg mb-8 text-gray-600">
+            <p className="text-lg mb-8 text-gray-600 dark:text-gray-400">
               {isMobile 
                 ? 'Tap the + button to create your first code widget' 
                 : 'Create windows to start coding in any language'
@@ -550,9 +556,9 @@ const Index = () => {
         </div>
       )}
 
-      {/* Bottom Editor Panel */}
+      {/* Mobile Code Drawer */}
       {editingWindow && (
-        <BottomEditor
+        <MobileCodeDrawer
           isOpen={!!editingWindow}
           onClose={() => setEditingWindow(null)}
           title={editingWindow.title}
@@ -564,7 +570,6 @@ const Index = () => {
               const windowIndex = windows.findIndex(w => w.id === editingWindow.id);
               if (windowIndex >= 0) {
                 const updatedWindow = { ...windows[windowIndex], showPreview: true };
-                // Toggle preview for this window
                 updateWindow(editingWindow.id, { showPreview: true });
                 setEditingWindow(updatedWindow);
               }
@@ -576,7 +581,7 @@ const Index = () => {
       {/* Library Modal */}
       {showLibrary && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-6xl h-[80vh] overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-6xl h-[80vh] overflow-hidden">
             <Library 
               onCreateFromLibrary={createFromLibraryItem}
               onClose={() => setShowLibrary(false)}
@@ -588,7 +593,7 @@ const Index = () => {
       {/* Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-4xl h-[80vh] overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-4xl h-[80vh] overflow-hidden">
             <Settings onClose={() => setShowSettings(false)} />
           </div>
         </div>
