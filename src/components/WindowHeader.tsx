@@ -44,16 +44,20 @@ const WindowHeader: React.FC<WindowHeaderProps> = ({
   const previewableLanguages = ['html', 'css', 'javascript', 'react'];
   const enhancedCanPreview = canPreview || previewableLanguages.includes(language.toLowerCase());
 
+  // Enhanced run capability check
+  const runnableLanguages = ['javascript', 'python', 'html', 'css'];
+  const enhancedCanRun = canRun || runnableLanguages.includes(language.toLowerCase());
+
   return (
     <div 
-      className="flex items-center justify-between p-3 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50 cursor-move active:cursor-grabbing select-none"
+      className="flex items-center justify-between p-3 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50 cursor-move active:cursor-grabbing select-none transition-all duration-200 hover:shadow-sm"
       onMouseDown={onMouseDown}
       onTouchStart={onTouchStart}
       style={{ touchAction: 'none' }}
     >
       <div className="flex items-center gap-3">
         <div 
-          className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm"
+          className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm transition-transform duration-200 hover:scale-110"
           style={{ backgroundColor: langColor }}
         >
           {langIcon}
@@ -65,7 +69,7 @@ const WindowHeader: React.FC<WindowHeaderProps> = ({
       </div>
       
       <div className="flex items-center gap-1">
-        {canRun && (
+        {enhancedCanRun && (
           <Button
             size="sm"
             variant="ghost"
@@ -73,7 +77,7 @@ const WindowHeader: React.FC<WindowHeaderProps> = ({
               e.stopPropagation();
               onRun();
             }}
-            className="h-7 px-2 hover:bg-green-100 text-green-600"
+            className="h-7 px-2 hover:bg-green-100 text-green-600 transition-all duration-200 hover:scale-105"
           >
             <Play className="w-3 h-3" />
           </Button>
@@ -87,7 +91,7 @@ const WindowHeader: React.FC<WindowHeaderProps> = ({
               e.stopPropagation();
               onTogglePreview();
             }}
-            className="h-7 px-2 hover:bg-blue-100 text-blue-600"
+            className="h-7 px-2 hover:bg-blue-100 text-blue-600 transition-all duration-200 hover:scale-105"
           >
             {showPreview ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
           </Button>
@@ -101,7 +105,7 @@ const WindowHeader: React.FC<WindowHeaderProps> = ({
               e.stopPropagation();
               onEdit();
             }}
-            className="h-7 px-2 hover:bg-purple-100 text-purple-600"
+            className="h-7 px-2 hover:bg-purple-100 text-purple-600 transition-all duration-200 hover:scale-105"
           >
             <Edit3 className="w-3 h-3" />
           </Button>
@@ -115,7 +119,7 @@ const WindowHeader: React.FC<WindowHeaderProps> = ({
               e.stopPropagation();
               onMaximize();
             }}
-            className="h-7 px-2 hover:bg-gray-100 text-gray-600"
+            className="h-7 px-2 hover:bg-gray-100 text-gray-600 transition-all duration-200 hover:scale-105"
           >
             {isMaximized ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
           </Button>
@@ -128,7 +132,7 @@ const WindowHeader: React.FC<WindowHeaderProps> = ({
             e.stopPropagation();
             onDelete();
           }}
-          className="h-7 px-2 hover:bg-red-100 text-red-600"
+          className="h-7 px-2 hover:bg-red-100 text-red-600 transition-all duration-200 hover:scale-105"
         >
           <X className="w-3 h-3" />
         </Button>

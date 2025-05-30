@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/button';
 import CodeEditor from './CodeEditor';
 import CodePreview from './CodePreview';
 import { getLanguageConfig, getLanguageComment } from '@/config/languages';
-import { triggerHapticFeedback, useOptimizedEventHandler } from '@/utils/performance';
+import { 
+  triggerHapticFeedback, 
+  useOptimizedEventHandler,
+  createSpringAnimation 
+} from '@/utils/performance';
 
 interface EnhancedBottomEditorProps {
   isOpen: boolean;
@@ -36,6 +40,14 @@ const EnhancedBottomEditor: React.FC<EnhancedBottomEditorProps> = memo(({
 
   const langConfig = getLanguageConfig(language);
   const IconComponent = langConfig.icon;
+
+  // Enhanced preview capability check
+  const previewableLanguages = ['html', 'css', 'javascript', 'react'];
+  const enhancedCanPreview = langConfig.previewable || previewableLanguages.includes(language.toLowerCase());
+
+  // Enhanced run capability check
+  const runnableLanguages = ['javascript', 'python', 'html', 'css'];
+  const enhancedCanRun = langConfig.runnable || runnableLanguages.includes(language.toLowerCase());
 
   const handleResizeStart = useOptimizedEventHandler((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -82,29 +94,38 @@ const EnhancedBottomEditor: React.FC<EnhancedBottomEditorProps> = memo(({
   }, [isResizing, handleResizeMove, handleResizeEnd]);
 
   const handleToggleMaximize = useOptimizedEventHandler(() => {
-    setIsMaximized(!isMaximized);
-    setHeight(isMaximized ? 30 : 90);
+    const newMaximized = !isMaximized;
+    const targetHeight = newMaximized ? 90 : 30;
+    
+    setIsMaximized(newMaximized);
+    
+    // Smooth spring animation for height change
+    if (editorRef.current) {
+      createSpringAnimation(editorRef.current, 'height', height, targetHeight, 400);
+    }
+    
+    setHeight(targetHeight);
     triggerHapticFeedback('medium');
-  }, [isMaximized]);
+  }, [isMaximized, height]);
 
   const handleViewChange = useOptimizedEventHandler((newView: 'code' | 'preview' | 'split') => {
     setView(newView);
-    if (newView === 'preview' || newView === 'split') {
+    if ((newView === 'preview' || newView === 'split') && enhancedCanPreview) {
       setPreviewKey(prev => prev + 1);
     }
     triggerHapticFeedback('light');
-  }, []);
+  }, [enhancedCanPreview]);
 
   const handleRun = useOptimizedEventHandler(() => {
     triggerHapticFeedback('medium');
     if (onRun) {
       onRun();
     }
-    if (langConfig.previewable) {
+    if (enhancedCanPreview) {
       setView('preview');
       setPreviewKey(prev => prev + 1);
     }
-  }, [onRun, langConfig.previewable]);
+  }, [onRun, enhancedCanPreview]);
 
   const handleClose = useOptimizedEventHandler(() => {
     triggerHapticFeedback('light');
@@ -118,57 +139,65 @@ const EnhancedBottomEditor: React.FC<EnhancedBottomEditorProps> = memo(({
   return (
     <div 
       ref={editorRef}
-      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-40 flex flex-col" 
-      style={{ height: currentHeight, transition: 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-40 flex flex-col will-change-transform" 
+      style={{ 
+        height: currentHeight, 
+        transition: 'height 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        backdropFilter: 'blur(10px)',
+        background: 'rgba(255, 255, 255, 0.95)'
+      }}
     >
-      {/* Resize Handle */}
+      {/* Enhanced Resize Handle */}
       <div
-        className={`h-2 bg-gray-100 border-b border-gray-200 cursor-ns-resize flex items-center justify-center hover:bg-gray-200 transition-colors ${
-          isResizing ? 'bg-blue-100' : ''
+        className={`h-3 bg-gradient-to-r from-gray-100 to-gray-200 border-b border-gray-200 cursor-ns-resize flex items-center justify-center hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200 transition-all duration-200 ${
+          isResizing ? 'bg-gradient-to-r from-blue-100 to-blue-200' : ''
         }`}
         onMouseDown={handleResizeStart}
         onTouchStart={handleResizeStart}
         style={{ touchAction: 'none' }}
       >
-        <div className="w-12 h-1 bg-gray-400 rounded-full"></div>
+        <div className={`w-12 h-1.5 rounded-full transition-all duration-200 ${
+          isResizing ? 'bg-blue-500' : 'bg-gray-400 hover:bg-blue-400'
+        }`}></div>
       </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 p-3 bg-gray-50 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className={`w-8 h-8 rounded-lg ${langConfig.bgColor} flex items-center justify-center text-white shadow-sm`}>
-            <IconComponent className="w-4 h-4" />
+      {/* Enhanced Header */}
+      <div className="flex items-center justify-between border-b border-gray-200 p-4 bg-gradient-to-r from-gray-50 to-white flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <div className={`w-10 h-10 rounded-xl ${langConfig.bgColor} flex items-center justify-center text-white shadow-lg transition-transform duration-200 hover:scale-105`}>
+            <IconComponent className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">
+            <h3 className="font-bold text-gray-900 text-lg">
               Editing: <span className="text-blue-600">{title}</span>
             </h3>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="bg-gray-200 px-2 py-0.5 rounded text-xs font-medium">{language}</div>
-              <div className="text-xs text-gray-500">{code.split('\n').length} lines</div>
+            <div className="flex items-center gap-3 mt-1">
+              <div className="bg-gradient-to-r from-gray-200 to-gray-300 px-3 py-1 rounded-full text-sm font-semibold">{language}</div>
+              <div className="text-sm text-gray-500">{code.split('\n').length} lines</div>
+              <div className="text-sm text-gray-500">{code.length} chars</div>
             </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
-          {/* View Toggle Buttons */}
-          <div className="flex items-center bg-gray-200 rounded-lg p-1">
+        <div className="flex items-center gap-3">
+          {/* Enhanced View Toggle Buttons */}
+          <div className="flex items-center bg-gray-200 rounded-xl p-1 shadow-inner">
             <Button
               size="sm"
               variant={view === 'code' ? 'default' : 'ghost'}
               onClick={() => handleViewChange('code')}
-              className="gap-1 h-8"
+              className="gap-2 h-9 px-4 rounded-lg transition-all duration-200 hover:scale-105"
             >
               <Code className="w-4 h-4" />
               Code
             </Button>
-            {langConfig.previewable && (
+            {enhancedCanPreview && (
               <>
                 <Button
                   size="sm"
                   variant={view === 'split' ? 'default' : 'ghost'}
                   onClick={() => handleViewChange('split')}
-                  className="gap-1 h-8"
+                  className="gap-2 h-9 px-4 rounded-lg transition-all duration-200 hover:scale-105"
                 >
                   <Maximize2 className="w-4 h-4" />
                   Split
@@ -177,7 +206,7 @@ const EnhancedBottomEditor: React.FC<EnhancedBottomEditorProps> = memo(({
                   size="sm"
                   variant={view === 'preview' ? 'default' : 'ghost'}
                   onClick={() => handleViewChange('preview')}
-                  className="gap-1 h-8"
+                  className="gap-2 h-9 px-4 rounded-lg transition-all duration-200 hover:scale-105"
                 >
                   <Eye className="w-4 h-4" />
                   Preview
@@ -186,12 +215,12 @@ const EnhancedBottomEditor: React.FC<EnhancedBottomEditorProps> = memo(({
             )}
           </div>
           
-          {/* Action Buttons */}
-          {langConfig.runnable && (
+          {/* Enhanced Action Buttons */}
+          {enhancedCanRun && (
             <Button
               size="sm"
               onClick={handleRun}
-              className="bg-green-600 hover:bg-green-700 gap-1 h-8"
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 gap-2 h-9 px-4 shadow-lg transition-all duration-200 hover:scale-105"
             >
               <Play className="w-4 h-4" />
               Run
@@ -202,7 +231,7 @@ const EnhancedBottomEditor: React.FC<EnhancedBottomEditorProps> = memo(({
             size="sm" 
             variant="ghost" 
             onClick={handleToggleMaximize} 
-            className="p-2 h-8 w-8"
+            className="p-2 h-9 w-9 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-105"
           >
             {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </Button>
@@ -211,15 +240,15 @@ const EnhancedBottomEditor: React.FC<EnhancedBottomEditorProps> = memo(({
             size="sm" 
             variant="ghost" 
             onClick={handleClose} 
-            className="p-2 h-8 w-8"
+            className="p-2 h-9 w-9 hover:bg-red-100 text-red-600 rounded-lg transition-all duration-200 hover:scale-105"
           >
             <X className="w-4 h-4" />
           </Button>
         </div>
       </div>
       
-      {/* Editor/Preview Content */}
-      <div className="flex-1 overflow-hidden">
+      {/* Enhanced Editor/Preview Content */}
+      <div className="flex-1 overflow-hidden bg-gray-50">
         {view === 'code' ? (
           <div className="h-full">
             <CodeEditor
@@ -230,11 +259,22 @@ const EnhancedBottomEditor: React.FC<EnhancedBottomEditorProps> = memo(({
           </div>
         ) : view === 'preview' ? (
           <div className="h-full">
-            <CodePreview
-              key={previewKey}
-              language={language}
-              code={code}
-            />
+            {enhancedCanPreview ? (
+              <CodePreview
+                key={previewKey}
+                language={language}
+                code={code}
+              />
+            ) : (
+              <div className="h-full flex items-center justify-center bg-gray-100">
+                <div className="text-center">
+                  <div className="text-gray-400 mb-2">
+                    <Eye className="w-12 h-12 mx-auto" />
+                  </div>
+                  <p className="text-gray-600">Preview not available for {language}</p>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="h-full flex">
@@ -246,11 +286,22 @@ const EnhancedBottomEditor: React.FC<EnhancedBottomEditorProps> = memo(({
               />
             </div>
             <div className="w-1/2 h-full">
-              <CodePreview
-                key={previewKey}
-                language={language}
-                code={code}
-              />
+              {enhancedCanPreview ? (
+                <CodePreview
+                  key={previewKey}
+                  language={language}
+                  code={code}
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center bg-gray-100">
+                  <div className="text-center">
+                    <div className="text-gray-400 mb-2">
+                      <Eye className="w-8 h-8 mx-auto" />
+                    </div>
+                    <p className="text-gray-600 text-sm">Preview not available</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

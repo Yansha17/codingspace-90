@@ -1,17 +1,10 @@
 
 import React, { useRef, useState, useEffect, useCallback, memo } from 'react';
-import { X, Edit3, Eye, Code2, Move } from 'lucide-react';
+import { X, Edit3, Eye, Code2, Move, Maximize2, Minimize2, Play, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CodePreviewMini from './CodePreviewMini';
 import { getLanguageConfig } from '@/config/languages';
-import { 
-  triggerHapticFeedback, 
-  useOptimizedDragHandler,
-  useDebouncedCallback,
-  nonPassiveEventOptions,
-  optimizeTransform,
-  optimizeResize
-} from '@/utils/performance';
+import { useStandardWidget, StandardWidgetActions } from '@/hooks/useStandardWidget';
 
 interface MobileWidgetProps {
   title: string;
@@ -23,8 +16,13 @@ interface MobileWidgetProps {
   zIndex: number;
   languageColor: string;
   isDragging: boolean;
+  showPreview?: boolean;
+  previewKey?: number;
+  isMaximized?: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  onTogglePreview?: () => void;
+  onMaximize?: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
   onTouchStart: (e: React.TouchEvent) => void;
   onResize: (size: { width: number; height: number }) => void;
@@ -40,20 +38,34 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   zIndex,
   languageColor,
   isDragging,
+  showPreview = false,
+  previewKey = 0,
+  isMaximized = false,
   onEdit,
   onDelete,
+  onTogglePreview,
+  onMaximize,
   onMouseDown,
   onTouchStart,
   onResize
 }) => {
   const [isResizing, setIsResizing] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewKey, setPreviewKey] = useState(0);
+  const [localShowPreview, setLocalShowPreview] = useState(showPreview);
+  const [localPreviewKey, setLocalPreviewKey] = useState(previewKey);
   const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
 
   const langConfig = getLanguageConfig(title);
   const IconComponent = langConfig.icon;
+
+  // Sync with parent state
+  useEffect(() => {
+    setLocalShowPreview(showPreview);
+  }, [showPreview]);
+
+  useEffect(() => {
+    setLocalPreviewKey(previewKey);
+  }, [previewKey]);
 
   const handleWidgetMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -63,8 +75,6 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     
     e.preventDefault();
     e.stopPropagation();
-    
-    triggerHapticFeedback('light');
     onMouseDown(e);
   }, [onMouseDown]);
 
@@ -76,8 +86,6 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
 
     e.preventDefault();
     e.stopPropagation();
-    
-    triggerHapticFeedback('light');
     onTouchStart(e);
   }, [onTouchStart]);
 
@@ -95,12 +103,9 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
       width: size.width,
       height: size.height
     };
-    
-    triggerHapticFeedback('medium');
   }, [size]);
 
-  // Optimized resize handler with fast throttling
-  const handleResizeMove = useOptimizedDragHandler((e: MouseEvent | TouchEvent) => {
+  const handleResizeMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isResizing || !resizeStartRef.current) return;
     
     e.preventDefault();
@@ -113,12 +118,11 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     const newWidth = Math.max(140, resizeStartRef.current.width + deltaX);
     const newHeight = Math.max(120, resizeStartRef.current.height + deltaY);
     
-    // Optimized direct DOM manipulation for smooth performance
     if (widgetRef.current) {
-      optimizeResize(widgetRef.current, newWidth, newHeight);
+      widgetRef.current.style.width = `${newWidth}px`;
+      widgetRef.current.style.height = `${newHeight}px`;
     }
     
-    // Debounced state update to reduce re-renders
     onResize({ width: newWidth, height: newHeight });
   }, [isResizing, onResize]);
 
@@ -131,7 +135,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     if (isResizing) {
       document.addEventListener('mousemove', handleResizeMove, { passive: false });
       document.addEventListener('mouseup', handleResizeEnd, { passive: true });
-      document.addEventListener('touchmove', handleResizeMove, nonPassiveEventOptions);
+      document.addEventListener('touchmove', handleResizeMove, { passive: false });
       document.addEventListener('touchend', handleResizeEnd, { passive: true });
       
       return () => {
@@ -146,34 +150,57 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   const handleTogglePreview = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setShowPreview(!showPreview);
-    setPreviewKey(prev => prev + 1);
-    triggerHapticFeedback('light');
-  }, [showPreview]);
+    
+    if (onTogglePreview) {
+      onTogglePreview();
+    } else {
+      setLocalShowPreview(!localShowPreview);
+      setLocalPreviewKey(prev => prev + 1);
+    }
+  }, [localShowPreview, onTogglePreview]);
+
+  const handleMaximize = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (onMaximize) {
+      onMaximize();
+    }
+  }, [onMaximize]);
 
   const handleEdit = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    triggerHapticFeedback('medium');
     onEdit();
   }, [onEdit]);
 
   const handleDelete = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    triggerHapticFeedback('heavy');
     onDelete();
   }, [onDelete]);
 
+  const handleRun = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log(`Running ${langName} code:`, code);
+    if (langConfig.previewable) {
+      handleTogglePreview(e);
+    }
+  }, [langName, code, langConfig.previewable, handleTogglePreview]);
+
   const lineCount = code.split('\n').length;
   const isLargeWidget = size.width > 200 && size.height > 180;
+  const currentShowPreview = onTogglePreview ? showPreview : localShowPreview;
+  const currentPreviewKey = previewKey || localPreviewKey;
 
   return (
     <div
       ref={widgetRef}
-      className={`absolute rounded-xl shadow-2xl border overflow-hidden transition-transform duration-100 will-change-transform ${
+      className={`absolute rounded-xl shadow-2xl border overflow-hidden transition-all duration-300 will-change-transform select-none ${
         isDragging ? 'cursor-grabbing scale-105 shadow-3xl' : 'cursor-grab'
-      } select-none`}
+      }`}
       style={{
         left: position.x,
         top: position.y,
@@ -185,7 +212,8 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
         borderColor: isDragging ? '#10B981' : '#475569',
         boxShadow: isDragging 
           ? '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(16, 185, 129, 0.3)' 
-          : '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)'
+          : '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)',
+        transform: isDragging ? 'scale(1.02)' : 'scale(1)'
       }}
       onMouseDown={handleWidgetMouseDown}
       onTouchStart={handleWidgetTouchStart}
@@ -213,6 +241,20 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
         </div>
         
         <div className="flex items-center gap-1">
+          {/* Run Button - Show for runnable languages */}
+          {langConfig.runnable && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleRun}
+              onTouchStart={handleRun}
+              className="h-8 w-8 p-0 hover:bg-green-600 rounded-lg z-20 relative touch-manipulation"
+              style={{ touchAction: 'manipulation' }}
+            >
+              <Play className="w-4 h-4 text-green-400 hover:text-white" />
+            </Button>
+          )}
+          
           {/* Preview Button - Show for previewable languages */}
           {langConfig.previewable && (
             <Button
@@ -223,21 +265,31 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
               className="h-8 w-8 p-0 hover:bg-emerald-600 rounded-lg z-20 relative touch-manipulation"
               style={{ touchAction: 'manipulation' }}
             >
-              <Eye className={`w-4 h-4 ${showPreview ? 'text-emerald-300' : 'text-emerald-400'} hover:text-white`} />
+              {currentShowPreview ? (
+                <EyeOff className="w-4 h-4 text-emerald-300 hover:text-white" />
+              ) : (
+                <Eye className="w-4 h-4 text-emerald-400 hover:text-white" />
+              )}
             </Button>
           )}
           
-          {/* Code Toggle Button */}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleTogglePreview}
-            onTouchStart={handleTogglePreview}
-            className="h-8 w-8 p-0 hover:bg-slate-600 rounded-lg z-20 relative touch-manipulation"
-            style={{ touchAction: 'manipulation' }}
-          >
-            <Code2 className="w-4 h-4 text-slate-300 hover:text-white" />
-          </Button>
+          {/* Maximize/Minimize Button */}
+          {onMaximize && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleMaximize}
+              onTouchStart={handleMaximize}
+              className="h-8 w-8 p-0 hover:bg-purple-600 rounded-lg z-20 relative touch-manipulation"
+              style={{ touchAction: 'manipulation' }}
+            >
+              {isMaximized ? (
+                <Minimize2 className="w-4 h-4 text-purple-400 hover:text-white" />
+              ) : (
+                <Maximize2 className="w-4 h-4 text-purple-400 hover:text-white" />
+              )}
+            </Button>
+          )}
           
           {/* Edit Button */}
           <Button
@@ -268,10 +320,10 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
       {/* Widget Content */}
       <div className="flex flex-col h-full relative">
         <div className="flex-1 p-4 overflow-hidden">
-          {showPreview && isLargeWidget && langConfig.previewable ? (
+          {currentShowPreview && isLargeWidget && langConfig.previewable ? (
             <div className="h-full bg-slate-800 rounded-lg p-3 overflow-hidden">
               <CodePreviewMini 
-                key={previewKey}
+                key={currentPreviewKey}
                 code={code} 
                 language={title.toLowerCase()} 
                 maxLines={Math.floor((size.height - 120) / 20)}
