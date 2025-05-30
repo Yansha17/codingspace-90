@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -26,60 +26,112 @@ const LANGUAGES = {
 
 const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    console.log('EnhancedFAB mounted, onCreateWindow:', typeof onCreateWindow, onCreateWindow);
+    setIsVisible(true);
+  }, [onCreateWindow]);
 
   const handleLanguageSelect = (languageKey: string) => {
-    console.log(`Creating window for language: ${languageKey}`);
-    console.log('onCreateWindow function:', onCreateWindow);
+    console.log(`FAB: Creating window for language: ${languageKey}`);
+    console.log('FAB: onCreateWindow function type:', typeof onCreateWindow);
+    console.log('FAB: onCreateWindow function:', onCreateWindow);
     
     // Call the parent's function to create the window
     if (onCreateWindow && typeof onCreateWindow === 'function') {
-      onCreateWindow(languageKey);
+      try {
+        onCreateWindow(languageKey);
+        console.log('FAB: Successfully called onCreateWindow');
+      } catch (error) {
+        console.error('FAB: Error calling onCreateWindow:', error);
+      }
     } else {
-      console.error('onCreateWindow is not a function:', onCreateWindow);
+      console.error('FAB: onCreateWindow is not a function:', onCreateWindow);
     }
     setIsExpanded(false);
   };
 
   const handleToggle = () => {
-    console.log('FAB toggle clicked, isExpanded:', !isExpanded);
+    console.log('FAB: Toggle clicked, current isExpanded:', isExpanded);
     setIsExpanded(!isExpanded);
   };
 
   const handleLanguageClick = (key: string) => {
-    console.log(`Language button clicked: ${key}`);
+    console.log(`FAB: Language button clicked: ${key}`);
     handleLanguageSelect(key);
   };
 
+  if (!isVisible) {
+    console.log('FAB: Not visible, returning null');
+    return null;
+  }
+
+  console.log('FAB: Rendering, isExpanded:', isExpanded);
+
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div style={{
+      position: 'fixed',
+      bottom: '0px',
+      right: '0px',
+      zIndex: 99999,
+      pointerEvents: 'auto'
+    }}>
       {/* Backdrop */}
       {isExpanded && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm -z-10"
-          onClick={() => setIsExpanded(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+            backdropFilter: 'blur(2px)',
+            zIndex: -1
+          }}
+          onClick={() => {
+            console.log('FAB: Backdrop clicked');
+            setIsExpanded(false);
+          }}
         />
       )}
 
       {/* Language Pills */}
-      <div className={`absolute bottom-20 right-0 transition-all duration-300 ease-out ${
-        isExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'
-      }`}>
-        <div className="flex flex-col gap-3 items-end">
+      <div style={{
+        position: 'absolute',
+        bottom: '80px',
+        right: '0px',
+        transition: 'all 0.3s ease-out',
+        opacity: isExpanded ? 1 : 0,
+        transform: isExpanded ? 'translateY(0)' : 'translateY(32px)',
+        pointerEvents: isExpanded ? 'auto' : 'none'
+      }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          alignItems: 'flex-end'
+        }}>
           {Object.entries(LANGUAGES).map(([key, lang], index) => (
             <div
               key={key}
-              className="transform transition-all duration-300 ease-out"
               style={{
+                transform: `translateX(${isExpanded ? '0' : '60px'})`,
+                transition: `all 0.3s ease-out`,
                 transitionDelay: isExpanded ? `${index * 50}ms` : '0ms'
               }}
             >
               <Button
-                onClick={() => handleLanguageClick(key)}
+                onClick={() => {
+                  console.log(`FAB: Language pill clicked: ${key}`);
+                  handleLanguageClick(key);
+                }}
                 className="h-12 px-4 rounded-full shadow-lg border-2 border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:shadow-xl"
                 style={{
                   backgroundColor: lang.color,
                   color: lang.textColor,
-                  transform: isExpanded ? 'translateX(0)' : 'translateX(60px)'
+                  minWidth: '120px'
                 }}
               >
                 <span className="mr-2 text-lg">{lang.icon}</span>
@@ -92,17 +144,25 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
 
       {/* Main FAB Button */}
       <Button
-        onClick={handleToggle}
-        className={`w-16 h-16 rounded-full shadow-2xl transition-all duration-300 ease-out border-4 border-white/20 backdrop-blur-sm touch-manipulation ${
-          isExpanded 
-            ? 'bg-red-500 hover:bg-red-600 rotate-45 scale-110' 
-            : 'bg-gradient-to-br from-blue-500 via-purple-600 to-blue-700 hover:from-blue-600 hover:via-purple-700 hover:to-blue-800 hover:scale-110'
-        }`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('FAB: Main button clicked');
+          handleToggle();
+        }}
+        className="w-16 h-16 rounded-full shadow-2xl transition-all duration-300 ease-out border-4 border-white/20 backdrop-blur-sm"
         style={{
-          background: isExpanded ? '#EF4444' : 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 50%, #1D4ED8 100%)'
+          background: isExpanded 
+            ? '#EF4444' 
+            : 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 50%, #1D4ED8 100%)',
+          transform: `rotate(${isExpanded ? '45deg' : '0deg'}) scale(${isExpanded ? '1.1' : '1'})`,
+          zIndex: 100000
         }}
       >
-        <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-0' : 'rotate-0'}`}>
+        <div style={{
+          transition: 'transform 0.3s ease-out',
+          transform: `rotate(${isExpanded ? '-45deg' : '0deg'})`
+        }}>
           {isExpanded ? (
             <X className="w-7 h-7 text-white" />
           ) : (
@@ -113,7 +173,13 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
 
       {/* Pulse animation when not expanded */}
       {!isExpanded && (
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 via-purple-600 to-blue-700 animate-ping opacity-20" />
+        <div 
+          className="absolute inset-0 rounded-full animate-ping opacity-20"
+          style={{
+            background: 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 50%, #1D4ED8 100%)',
+            pointerEvents: 'none'
+          }}
+        />
       )}
     </div>
   );

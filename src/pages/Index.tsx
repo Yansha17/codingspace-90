@@ -111,7 +111,18 @@ const Index = () => {
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768 || 'ontouchstart' in window);
+      const isMobileDevice = window.innerWidth <= 768 || 
+                            'ontouchstart' in window || 
+                            navigator.maxTouchPoints > 0 ||
+                            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      console.log('Mobile detection:', {
+        innerWidth: window.innerWidth,
+        hasTouchStart: 'ontouchstart' in window,
+        maxTouchPoints: navigator.maxTouchPoints,
+        userAgent: navigator.userAgent,
+        isMobileDevice
+      });
+      setIsMobile(isMobileDevice);
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
@@ -179,6 +190,8 @@ const Index = () => {
 
   const addNewWindow = useCallback((language: string, isWidget: boolean = false) => {
     console.log(`Adding new window for language: ${language}, isWidget: ${isWidget}`);
+    console.log('Current windows count:', windows.length);
+    
     const lang = LANGUAGES[language] || { name: language, color: '#666', icon: '📄' };
     
     const newWindow: CodeWindowType = {
@@ -197,11 +210,16 @@ const Index = () => {
       zIndex: highestZIndex + 1
     };
 
-    setWindows(prev => [...prev, newWindow]);
+    console.log('Creating new window:', newWindow);
+    setWindows(prev => {
+      const updated = [...prev, newWindow];
+      console.log('Updated windows:', updated);
+      return updated;
+    });
     setNextId(prev => prev + 1);
     setHighestZIndex(prev => prev + 1);
     setIsNewWindowOpen(false);
-  }, [highestZIndex, nextId, isMobile]);
+  }, [highestZIndex, nextId, isMobile, windows.length]);
 
   const createFromLibraryItem = useCallback((item: LibraryItem) => {
     const lang = LANGUAGES[item.language] || { name: item.language, color: '#666', icon: '📄' };
@@ -521,12 +539,15 @@ const Index = () => {
         </div>
       )}
 
-      {/* Enhanced FAB */}
-      {isMobile && !editingWindow && (
-        <EnhancedFAB onCreateWindow={(lang) => {
-          console.log(`FAB onCreateWindow called with: ${lang}`);
-          addNewWindow(lang, true);
-        }} />
+      {/* Enhanced FAB - Always show on mobile, unless editing */}
+      {(isMobile || window.innerWidth <= 768) && !editingWindow && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999 }}>
+          <EnhancedFAB onCreateWindow={(lang) => {
+            console.log(`FAB onCreateWindow called with: ${lang}`);
+            console.log('addNewWindow function:', addNewWindow);
+            addNewWindow(lang, true);
+          }} />
+        </div>
       )}
 
       {/* Bottom Editor Panel */}
