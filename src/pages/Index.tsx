@@ -1,6 +1,6 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Plus, Play, Code, Smartphone, Monitor, Menu, ChevronDown, Settings as SettingsIcon, X, Eye, Move, Home, BarChart3, Database } from 'lucide-react';
+import { Plus, Play, Code, Smartphone, Monitor, Menu, ChevronDown, X, Eye, Move, Home, BarChart3, Database } from 'lucide-react';
+import { SettingsIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CodeWindow from '@/components/CodeWindow';
 import CanvasBackground from '@/components/CanvasBackground';
@@ -8,6 +8,7 @@ import NewWindowDialog from '@/components/NewWindowDialog';
 import EnhancedFAB from '@/components/EnhancedFAB';
 import Library from '@/components/Library';
 import Settings from '@/components/Settings';
+import BottomEditor from '@/components/BottomEditor';
 import { CodeWindowType } from '@/types/CodeWindow';
 import { LibraryItem } from '@/types/Library';
 import { useLibrary } from '@/hooks/useLibrary';
@@ -105,6 +106,7 @@ const Index = () => {
   const [hamburgerMenuOpen, setHamburgerMenuOpen] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [editingWindow, setEditingWindow] = useState<CodeWindowType | null>(null);
   
   const { addItem } = useLibrary();
 
@@ -128,10 +130,19 @@ const Index = () => {
   }, [isMobile]);
 
   const updateWindow = useCallback((id: string, updates: Partial<CodeWindowType>) => {
-    setWindows(prev => prev.map(window => 
-      window.id === id ? { ...window, ...updates } : window
-    ));
-  }, []);
+    setWindows(prev => {
+      const updatedWindows = prev.map(window => 
+        window.id === id ? { ...window, ...updates } : window
+      );
+      
+      // If we're editing a window and it's being updated, sync the changes
+      if (editingWindow && editingWindow.id === id) {
+        setEditingWindow(updatedWindows.find(w => w.id === id) || null);
+      }
+      
+      return updatedWindows;
+    });
+  }, [editingWindow]);
 
   const bringToFront = useCallback((id: string) => {
     const newZIndex = highestZIndex + 1;
@@ -140,8 +151,13 @@ const Index = () => {
   }, [highestZIndex, updateWindow]);
 
   const deleteWindow = useCallback((id: string) => {
+    // If this is the window being edited, close the editor
+    if (editingWindow && editingWindow.id === id) {
+      setEditingWindow(null);
+    }
+    
     setWindows(prev => prev.filter(window => window.id !== id));
-  }, []);
+  }, [editingWindow]);
 
   const getDefaultCode = (language: string) => {
     const examples = {
@@ -163,6 +179,7 @@ const Index = () => {
   };
 
   const addNewWindow = useCallback((language: string, isWidget: boolean = false) => {
+    console.log(`Adding new window for language: ${language}, isWidget: ${isWidget}`);
     const lang = LANGUAGES[language] || { name: language, color: '#666', icon: '📄' };
     
     const newWindow: CodeWindowType = {
@@ -252,6 +269,24 @@ const Index = () => {
       setShowLibrary(true);
     } else if (item === 'settings') {
       setShowSettings(true);
+    } else if (item === 'dashboard') {
+      // Return to dashboard - close all modals
+      setShowLibrary(false);
+      setShowSettings(false);
+      setEditingWindow(null);
+    }
+  };
+
+  const handleEditWindow = (id: string) => {
+    const windowToEdit = windows.find(w => w.id === id);
+    if (windowToEdit) {
+      setEditingWindow(windowToEdit);
+    }
+  };
+
+  const handleBottomEditorCodeChange = (code: string) => {
+    if (editingWindow) {
+      updateWindow(editingWindow.id, { code });
     }
   };
 
@@ -342,7 +377,7 @@ const Index = () => {
       {/* Canvas */}
       <div 
         ref={canvasRef}
-        className={`absolute inset-0 ${isMobile ? 'pt-16' : 'pt-20'}`}
+        className={`absolute inset-0 ${isMobile ? 'pt-16' : 'pt-20'} ${editingWindow ? 'pb-[40vh]' : ''}`}
         style={{
           transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${canvasScale})`,
           transformOrigin: '0 0',
@@ -361,6 +396,7 @@ const Index = () => {
             onUpdate={updateWindow}
             onBringToFront={bringToFront}
             onDelete={deleteWindow}
+            onEdit={handleEditWindow}
           />
         ))}
       </div>
@@ -390,7 +426,7 @@ const Index = () => {
       )}
 
       {/* Mobile indicator */}
-      {isMobile && (
+      {isMobile && !editingWindow && (
         <div className="absolute bottom-20 left-4 right-4 bg-blue-600 text-white p-3 rounded-lg shadow-lg">
           <div className="flex items-center gap-2">
             <Smartphone className="w-4 h-4" />
@@ -400,8 +436,31 @@ const Index = () => {
       )}
 
       {/* Enhanced FAB replaces MobileFloatingMenu */}
-      {isMobile && (
+      {isMobile && !editingWindow && (
         <EnhancedFAB onCreateWindow={(lang) => addNewWindow(lang, true)} />
+      )}
+
+      {/* Bottom Editor Panel */}
+      {editingWindow && (
+        <BottomEditor
+          isOpen={!!editingWindow}
+          onClose={() => setEditingWindow(null)}
+          title={editingWindow.title}
+          language={editingWindow.language}
+          code={editingWindow.code}
+          onChange={handleBottomEditorCodeChange}
+          onRun={() => {
+            if (['html', 'css', 'javascript'].includes(editingWindow.language)) {
+              const windowIndex = windows.findIndex(w => w.id === editingWindow.id);
+              if (windowIndex >= 0) {
+                const updatedWindow = { ...windows[windowIndex], showPreview: true };
+                // Toggle preview for this window
+                updateWindow(editingWindow.id, { showPreview: true });
+                setEditingWindow(updatedWindow);
+              }
+            }
+          }}
+        />
       )}
 
       {/* Library Modal */}

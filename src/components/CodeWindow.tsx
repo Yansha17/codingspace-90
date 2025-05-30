@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
@@ -12,6 +13,7 @@ interface CodeWindowProps {
   onUpdate: (id: string, updates: Partial<CodeWindowType>) => void;
   onBringToFront: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit?: (id: string) => void;
 }
 
 const LANGUAGES = {
@@ -34,7 +36,8 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
   window: codeWindow,
   onUpdate,
   onBringToFront,
-  onDelete
+  onDelete,
+  onEdit
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -163,6 +166,14 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     }
   }, [showPreview]);
 
+  const handleEdit = useCallback(() => {
+    if (onEdit) {
+      onEdit(codeWindow.id);
+    } else {
+      setMobileEditorOpen(true);
+    }
+  }, [codeWindow.id, onEdit]);
+
   const canRun = ['javascript', 'python', 'html', 'css'].includes(codeWindow.language);
   const canPreview = ['html', 'css', 'javascript'].includes(codeWindow.language);
 
@@ -185,7 +196,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
           zIndex={codeWindow.zIndex}
           languageColor={languageColor}
           isDragging={isDragging}
-          onEdit={() => setMobileEditorOpen(true)}
+          onEdit={handleEdit}
           onDelete={() => onDelete(codeWindow.id)}
           onMouseDown={(e) => handleStart(e, 'drag')}
           onTouchStart={(e) => handleStart(e, 'drag')}
@@ -232,6 +243,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
         onRun={handleRunCode}
         onTogglePreview={handleTogglePreview}
         onDelete={() => onDelete(codeWindow.id)}
+        onEdit={handleEdit}
         onMouseDown={(e) => handleStart(e, 'drag')}
         onTouchStart={(e) => handleStart(e, 'drag')}
       />

@@ -28,6 +28,7 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleLanguageSelect = (languageKey: string) => {
+    console.log(`Creating window for language: ${languageKey}`);
     onCreateWindow(languageKey);
     setIsExpanded(false);
   };
