@@ -1,6 +1,6 @@
 
-import React, { useRef, useState, useEffect } from 'react';
-import { X, Edit3, Eye, Code2 } from 'lucide-react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { X, Edit3, Eye, Code2, Move } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CodePreviewMini from './CodePreviewMini';
 
@@ -38,15 +38,15 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
   onResize
 }) => {
   const [isResizing, setIsResizing] = useState(false);
-  const [showCodePreview, setShowCodePreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
-  const dragStartTimeRef = useRef<number>(0);
+  const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
 
   // Languages that support preview
   const previewableLanguages = ['html', 'css', 'javascript', 'react'];
   const canPreview = previewableLanguages.includes(title.toLowerCase());
 
-  const handleWidgetMouseDown = (e: React.MouseEvent) => {
+  const handleWidgetMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('[data-resize-handle]')) {
       return;
@@ -54,16 +54,15 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
     
     e.preventDefault();
     e.stopPropagation();
-    dragStartTimeRef.current = Date.now();
     
     if ('vibrate' in navigator) {
-      navigator.vibrate(50);
+      navigator.vibrate(30);
     }
     
     onMouseDown(e);
-  };
+  }, [onMouseDown]);
 
-  const handleWidgetTouchStart = (e: React.TouchEvent) => {
+  const handleWidgetTouchStart = useCallback((e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('[data-resize-handle]')) {
       return;
@@ -71,38 +70,89 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
 
     e.preventDefault();
     e.stopPropagation();
-    dragStartTimeRef.current = Date.now();
+    
+    if ('vibrate' in navigator) {
+      navigator.vibrate(30);
+    }
+    onTouchStart(e);
+  }, [onTouchStart]);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    setIsResizing(true);
+    resizeStartRef.current = {
+      x: clientX,
+      y: clientY,
+      width: size.width,
+      height: size.height
+    };
     
     if ('vibrate' in navigator) {
       navigator.vibrate(50);
     }
-    onTouchStart(e);
-  };
+  }, [size]);
 
-  const handleButtonClick = (e: React.MouseEvent | React.TouchEvent, action: () => void) => {
+  const handleResizeMove = useCallback((e: MouseEvent | TouchEvent) => {
+    if (!isResizing || !resizeStartRef.current) return;
+    
+    e.preventDefault();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    const deltaX = clientX - resizeStartRef.current.x;
+    const deltaY = clientY - resizeStartRef.current.y;
+    
+    const newWidth = Math.max(140, resizeStartRef.current.width + deltaX);
+    const newHeight = Math.max(120, resizeStartRef.current.height + deltaY);
+    
+    onResize({ width: newWidth, height: newHeight });
+  }, [isResizing, onResize]);
+
+  const handleResizeEnd = useCallback(() => {
+    setIsResizing(false);
+    resizeStartRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    if (isResizing) {
+      const options = { passive: false };
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+      document.addEventListener('touchmove', handleResizeMove, options);
+      document.addEventListener('touchend', handleResizeEnd);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove);
+        document.removeEventListener('mouseup', handleResizeEnd);
+        document.removeEventListener('touchmove', handleResizeMove);
+        document.removeEventListener('touchend', handleResizeEnd);
+      };
+    }
+  }, [isResizing, handleResizeMove, handleResizeEnd]);
+
+  const handleTogglePreview = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    const clickDuration = Date.now() - dragStartTimeRef.current;
-    if (clickDuration < 200) {
-      action();
-    }
-  };
+    setShowPreview(!showPreview);
+    setPreviewKey(prev => prev + 1);
+  }, [showPreview]);
 
-  const handleEditClick = (e: React.MouseEvent | React.TouchEvent) => {
-    handleButtonClick(e, onEdit);
-  };
+  const handleEdit = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onEdit();
+  }, [onEdit]);
 
-  const handleDeleteClick = (e: React.MouseEvent | React.TouchEvent) => {
-    handleButtonClick(e, onDelete);
-  };
-
-  const handleTogglePreview = (e: React.MouseEvent | React.TouchEvent) => {
-    handleButtonClick(e, () => {
-      setShowCodePreview(!showCodePreview);
-      setPreviewKey(prev => prev + 1);
-    });
-  };
+  const handleDelete = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete();
+  }, [onDelete]);
 
   const lineCount = code.split('\n').length;
   const isLargeWidget = size.width > 200 && size.height > 180;
@@ -130,7 +180,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
 
   return (
     <div
-      className={`absolute rounded-xl shadow-2xl border overflow-hidden transition-all duration-300 ${
+      className={`absolute rounded-xl shadow-2xl border overflow-hidden transition-all duration-200 ${
         isDragging ? 'cursor-grabbing scale-105 shadow-3xl' : 'cursor-grab'
       } select-none`}
       style={{
@@ -152,14 +202,15 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
       {/* Drag indicator when dragging */}
       {isDragging && (
         <div className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-sm rounded-xl flex items-center justify-center z-10 pointer-events-none">
-          <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-medium">
+          <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2">
+            <Move className="w-3 h-3" />
             Moving...
           </div>
         </div>
       )}
 
       {/* Widget Header */}
-      <div className="bg-slate-700/80 backdrop-blur-sm border-b border-slate-600 p-3 flex items-center justify-between">
+      <div className="bg-slate-700/90 backdrop-blur-sm border-b border-slate-600 p-3 flex items-center justify-between">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className={`w-8 h-8 rounded-lg ${langInfo.bgColor} flex items-center justify-center text-white font-bold shadow-lg`}>
             {langIcon}
@@ -171,7 +222,21 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
         </div>
         
         <div className="flex items-center gap-1">
-          {/* Code/Preview Toggle Button */}
+          {/* Preview Button - Show for previewable languages */}
+          {canPreview && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleTogglePreview}
+              onTouchStart={handleTogglePreview}
+              className="h-8 w-8 p-0 hover:bg-emerald-600 rounded-lg z-20 relative touch-manipulation"
+              style={{ touchAction: 'manipulation' }}
+            >
+              <Eye className={`w-4 h-4 ${showPreview ? 'text-emerald-300' : 'text-emerald-400'} hover:text-white`} />
+            </Button>
+          )}
+          
+          {/* Code Toggle Button */}
           <Button
             size="sm"
             variant="ghost"
@@ -183,26 +248,12 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
             <Code2 className="w-4 h-4 text-slate-300 hover:text-white" />
           </Button>
           
-          {/* Preview Button - Only show for previewable languages */}
-          {canPreview && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleTogglePreview}
-              onTouchStart={handleTogglePreview}
-              className="h-8 w-8 p-0 hover:bg-emerald-600 rounded-lg z-20 relative touch-manipulation"
-              style={{ touchAction: 'manipulation' }}
-            >
-              <Eye className="w-4 h-4 text-emerald-400 hover:text-white" />
-            </Button>
-          )}
-          
           {/* Edit Button */}
           <Button
             size="sm"
             variant="ghost"
-            onClick={handleEditClick}
-            onTouchStart={handleEditClick}
+            onClick={handleEdit}
+            onTouchStart={handleEdit}
             className="h-8 w-8 p-0 hover:bg-blue-600 rounded-lg z-20 relative touch-manipulation"
             style={{ touchAction: 'manipulation' }}
           >
@@ -213,8 +264,8 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            onClick={handleDeleteClick}
-            onTouchStart={handleDeleteClick}
+            onClick={handleDelete}
+            onTouchStart={handleDelete}
             className="h-8 w-8 p-0 hover:bg-red-600 rounded-lg z-20 relative touch-manipulation"
             style={{ touchAction: 'manipulation' }}
           >
@@ -226,9 +277,10 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
       {/* Widget Content */}
       <div className="flex flex-col h-full relative">
         <div className="flex-1 p-4 overflow-hidden">
-          {showCodePreview && isLargeWidget ? (
+          {showPreview && isLargeWidget && canPreview ? (
             <div className="h-full bg-slate-800 rounded-lg p-3 overflow-hidden">
               <CodePreviewMini 
+                key={previewKey}
                 code={code} 
                 language={title.toLowerCase()} 
                 maxLines={Math.floor((size.height - 120) / 20)}
@@ -258,22 +310,23 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
       {/* Resize Handle */}
       <div
         data-resize-handle="true"
-        className={`absolute bottom-2 right-2 w-6 h-6 cursor-se-resize z-20 touch-manipulation ${
-          isResizing ? 'bg-blue-500' : 'bg-slate-600 hover:bg-slate-500'
-        } rounded-full flex items-center justify-center transition-colors opacity-70 hover:opacity-100`}
-        onMouseDown={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setIsResizing(true);
-        }}
-        onTouchStart={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setIsResizing(true);
-        }}
+        className={`absolute bottom-2 right-2 w-8 h-8 cursor-se-resize z-30 touch-manipulation ${
+          isResizing ? 'bg-blue-500 scale-110' : 'bg-slate-600 hover:bg-slate-500'
+        } rounded-full flex items-center justify-center transition-all opacity-70 hover:opacity-100 shadow-lg`}
+        onMouseDown={handleResizeStart}
+        onTouchStart={handleResizeStart}
         style={{ touchAction: 'none' }}
       >
-        <div className="w-2 h-2 bg-white rounded-full opacity-80"></div>
+        <div className="flex flex-col gap-0.5">
+          <div className="flex gap-0.5">
+            <div className="w-1 h-1 bg-white rounded-full opacity-80"></div>
+            <div className="w-1 h-1 bg-white rounded-full opacity-60"></div>
+          </div>
+          <div className="flex gap-0.5">
+            <div className="w-1 h-1 bg-white rounded-full opacity-60"></div>
+            <div className="w-1 h-1 bg-white rounded-full opacity-80"></div>
+          </div>
+        </div>
       </div>
     </div>
   );
