@@ -1,4 +1,3 @@
-
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import { 
@@ -164,7 +163,7 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
     }
   }, [isDragging, isResizing, handleDragMove, handleEnd]);
 
-  // Standard widget actions with faster feedback
+  // Standard widget actions with smoother feedback
   const toggleMaximize = useCallback(() => {
     triggerHapticFeedback('medium');
     if (isMaximized) {
@@ -232,15 +231,15 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
     handleDelete,
     handleCodeChange,
     
-    // Computed styles with hardware acceleration
+    // Computed styles with smooth hardware acceleration
     dragStyles: {
       cursor: isDragging ? 'grabbing' : 'grab',
-      transform: isDragging ? 'scale(1.02)' : 'scale(1)',
+      transform: isDragging ? 'scale(1.01)' : 'scale(1)',
       boxShadow: isDragging 
-        ? '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(16, 185, 129, 0.3)' 
-        : '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
+        ? '0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.2)' 
+        : '0 15px 20px -5px rgba(0, 0, 0, 0.25)',
       zIndex: isDragging ? 9999 : window.zIndex,
-      transition: isDragging ? 'none' : 'all 0.15s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+      transition: isDragging ? 'none' : 'all 0.1s ease-out',
       willChange: isDragging || isResizing ? 'transform' : 'auto',
       backfaceVisibility: 'hidden' as const,
       perspective: '1000px'

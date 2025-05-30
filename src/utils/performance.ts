@@ -90,8 +90,8 @@ export const optimizeResize = (element: HTMLElement, width: number, height: numb
   element.style.willChange = 'width, height';
 };
 
-// Instant spring animation utilities for immediate feedback
-export const createSpringAnimation = (element: HTMLElement, property: string, from: number, to: number, duration: number = 150) => {
+// Smooth linear animation utilities for fluid interactions
+export const createSmoothAnimation = (element: HTMLElement, property: string, from: number, to: number, duration: number = 100) => {
   const start = performance.now();
   const diff = to - from;
   
@@ -99,15 +99,8 @@ export const createSpringAnimation = (element: HTMLElement, property: string, fr
     const elapsed = currentTime - start;
     const progress = Math.min(elapsed / duration, 1);
     
-    // Fast spring easing function
-    const easeOutBack = (t: number) => {
-      const c1 = 1.70158;
-      const c3 = c1 + 1;
-      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-    };
-    
-    const easedProgress = easeOutBack(progress);
-    const currentValue = from + (diff * easedProgress);
+    // Simple linear easing for smooth movement
+    const currentValue = from + (diff * progress);
     
     (element.style as any)[property] = `${currentValue}px`;
     
