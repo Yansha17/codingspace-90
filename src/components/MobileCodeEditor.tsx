@@ -54,7 +54,7 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
 
   const handleRunCode = () => {
     console.log(`Running ${language} code:`, code);
-    if (['html', 'css', 'javascript'].includes(language)) {
+    if (['html', 'css', 'javascript', 'react'].includes(language)) {
       setView('preview');
       setPreviewKey(prev => prev + 1);
     }
@@ -62,7 +62,7 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
 
   const handleViewChange = (newView: 'code' | 'preview' | 'split') => {
     setView(newView);
-    if ((newView === 'preview' || newView === 'split') && ['html', 'css', 'javascript'].includes(language)) {
+    if ((newView === 'preview' || newView === 'split') && ['html', 'css', 'javascript', 'react'].includes(language)) {
       setPreviewKey(prev => prev + 1);
     }
   };
@@ -98,7 +98,7 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
     }
   };
 
-  const canPreview = ['html', 'css', 'javascript'].includes(language);
+  const canPreview = ['html', 'css', 'javascript', 'react'].includes(language);
 
   // Auto-expand when opened
   useEffect(() => {
@@ -117,7 +117,7 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
           <SheetHeader className="flex flex-row items-center justify-between p-4 pb-2 border-b border-gray-200">
             <SheetTitle className="text-lg">{title}</SheetTitle>
             <div className="flex items-center gap-2">
-              {/* View Toggle Buttons */}
+              {/* View Toggle Buttons - Always show these */}
               <div className="flex items-center bg-gray-200 rounded-lg p-1">
                 <Button
                   size="sm"
@@ -150,7 +150,7 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
               </div>
               
               {/* Run Button */}
-              {['javascript', 'python', 'html', 'css'].includes(language) && (
+              {['javascript', 'python', 'html', 'css', 'react'].includes(language) && (
                 <Button
                   size="sm"
                   onClick={handleRunCode}

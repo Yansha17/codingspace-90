@@ -154,12 +154,11 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
           previewKey={currentPreviewKey}
         />
 
-        {!isMaximized && (
-          <MobileWidgetResizeHandle
-            onResize={onResize}
-            currentSize={size}
-          />
-        )}
+        {/* Always show resize handle - don't hide when maximized */}
+        <MobileWidgetResizeHandle
+          onResize={onResize}
+          currentSize={size}
+        />
       </div>
     </>
   );
