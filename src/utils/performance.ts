@@ -1,7 +1,7 @@
 
 import { useCallback, useRef, useMemo } from 'react';
 
-// Throttle function using requestAnimationFrame
+// Throttle function using requestAnimationFrame for maximum performance
 export const throttleRAF = (func: (...args: any[]) => void) => {
   let rafId: number | null = null;
   
@@ -15,6 +15,19 @@ export const throttleRAF = (func: (...args: any[]) => void) => {
   };
 };
 
+// Fast throttle for drag operations - fires every 8ms for 120fps
+export const throttleFast = (func: (...args: any[]) => void, delay: number = 8) => {
+  let lastCall = 0;
+  
+  return (...args: any[]) => {
+    const now = Date.now();
+    if (now - lastCall >= delay) {
+      lastCall = now;
+      func(...args);
+    }
+  };
+};
+
 // Debounce function for resize operations
 export const debounce = (func: (...args: any[]) => void, delay: number) => {
   let timeoutId: NodeJS.Timeout;
@@ -23,6 +36,12 @@ export const debounce = (func: (...args: any[]) => void, delay: number) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => func(...args), delay);
   };
+};
+
+// Hook for optimized drag handlers - uses fast throttling
+export const useOptimizedDragHandler = (handler: (...args: any[]) => void, deps: any[]) => {
+  const throttledHandler = useMemo(() => throttleFast(handler, 8), deps);
+  return useCallback(throttledHandler, [throttledHandler]);
 };
 
 // Hook for optimized event handlers
@@ -52,3 +71,13 @@ export const triggerHapticFeedback = (type: 'light' | 'medium' | 'heavy' = 'ligh
 // Passive event listener options
 export const passiveEventOptions = { passive: true };
 export const nonPassiveEventOptions = { passive: false };
+
+// Transform optimization utilities
+export const optimizeTransform = (element: HTMLElement, x: number, y: number) => {
+  element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+};
+
+export const optimizeResize = (element: HTMLElement, width: number, height: number) => {
+  element.style.width = `${width}px`;
+  element.style.height = `${height}px`;
+};

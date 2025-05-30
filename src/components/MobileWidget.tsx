@@ -6,9 +6,11 @@ import CodePreviewMini from './CodePreviewMini';
 import { getLanguageConfig } from '@/config/languages';
 import { 
   triggerHapticFeedback, 
-  useOptimizedEventHandler, 
+  useOptimizedDragHandler,
   useDebouncedCallback,
-  nonPassiveEventOptions 
+  nonPassiveEventOptions,
+  optimizeTransform,
+  optimizeResize
 } from '@/utils/performance';
 
 interface MobileWidgetProps {
@@ -48,11 +50,12 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   const [showPreview, setShowPreview] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
   const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+  const widgetRef = useRef<HTMLDivElement>(null);
 
   const langConfig = getLanguageConfig(title);
   const IconComponent = langConfig.icon;
 
-  const handleWidgetMouseDown = useOptimizedEventHandler((e: React.MouseEvent) => {
+  const handleWidgetMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('[data-resize-handle]')) {
       return;
@@ -65,7 +68,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     onMouseDown(e);
   }, [onMouseDown]);
 
-  const handleWidgetTouchStart = useOptimizedEventHandler((e: React.TouchEvent) => {
+  const handleWidgetTouchStart = useCallback((e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('[data-resize-handle]')) {
       return;
@@ -78,7 +81,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     onTouchStart(e);
   }, [onTouchStart]);
 
-  const handleResizeStart = useOptimizedEventHandler((e: React.MouseEvent | React.TouchEvent) => {
+  const handleResizeStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -96,7 +99,8 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     triggerHapticFeedback('medium');
   }, [size]);
 
-  const handleResizeMove = useDebouncedCallback((e: MouseEvent | TouchEvent) => {
+  // Optimized resize handler with fast throttling
+  const handleResizeMove = useOptimizedDragHandler((e: MouseEvent | TouchEvent) => {
     if (!isResizing || !resizeStartRef.current) return;
     
     e.preventDefault();
@@ -109,8 +113,14 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     const newWidth = Math.max(140, resizeStartRef.current.width + deltaX);
     const newHeight = Math.max(120, resizeStartRef.current.height + deltaY);
     
+    // Optimized direct DOM manipulation for smooth performance
+    if (widgetRef.current) {
+      optimizeResize(widgetRef.current, newWidth, newHeight);
+    }
+    
+    // Debounced state update to reduce re-renders
     onResize({ width: newWidth, height: newHeight });
-  }, 16, [isResizing, onResize]);
+  }, [isResizing, onResize]);
 
   const handleResizeEnd = useCallback(() => {
     setIsResizing(false);
@@ -119,10 +129,10 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
 
   useEffect(() => {
     if (isResizing) {
-      document.addEventListener('mousemove', handleResizeMove);
-      document.addEventListener('mouseup', handleResizeEnd);
+      document.addEventListener('mousemove', handleResizeMove, { passive: false });
+      document.addEventListener('mouseup', handleResizeEnd, { passive: true });
       document.addEventListener('touchmove', handleResizeMove, nonPassiveEventOptions);
-      document.addEventListener('touchend', handleResizeEnd);
+      document.addEventListener('touchend', handleResizeEnd, { passive: true });
       
       return () => {
         document.removeEventListener('mousemove', handleResizeMove);
@@ -133,7 +143,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     }
   }, [isResizing, handleResizeMove, handleResizeEnd]);
 
-  const handleTogglePreview = useOptimizedEventHandler((e: React.MouseEvent | React.TouchEvent) => {
+  const handleTogglePreview = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setShowPreview(!showPreview);
@@ -141,14 +151,14 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     triggerHapticFeedback('light');
   }, [showPreview]);
 
-  const handleEdit = useOptimizedEventHandler((e: React.MouseEvent | React.TouchEvent) => {
+  const handleEdit = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
     triggerHapticFeedback('medium');
     onEdit();
   }, [onEdit]);
 
-  const handleDelete = useOptimizedEventHandler((e: React.MouseEvent | React.TouchEvent) => {
+  const handleDelete = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
     triggerHapticFeedback('heavy');
@@ -160,7 +170,8 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
 
   return (
     <div
-      className={`absolute rounded-xl shadow-2xl border overflow-hidden transition-all duration-200 ${
+      ref={widgetRef}
+      className={`absolute rounded-xl shadow-2xl border overflow-hidden transition-transform duration-100 will-change-transform ${
         isDragging ? 'cursor-grabbing scale-105 shadow-3xl' : 'cursor-grab'
       } select-none`}
       style={{

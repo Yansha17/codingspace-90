@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
@@ -9,8 +10,9 @@ import WindowResizeHandle from './WindowResizeHandle';
 import { getLanguageConfig } from '@/config/languages';
 import { 
   triggerHapticFeedback, 
-  useOptimizedEventHandler, 
-  useDebouncedCallback 
+  useOptimizedDragHandler,
+  useDebouncedCallback,
+  optimizeTransform
 } from '@/utils/performance';
 
 interface CodeWindowProps {
@@ -63,7 +65,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     return () => globalThis.window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const handleStart = useOptimizedEventHandler((e: React.MouseEvent | React.TouchEvent, action: 'drag' | 'resize') => {
+  const handleStart = useCallback((e: React.MouseEvent | React.TouchEvent, action: 'drag' | 'resize') => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -87,7 +89,8 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     }
   }, [codeWindow.id, onBringToFront]);
 
-  const handleMove = useDebouncedCallback((e: MouseEvent | TouchEvent) => {
+  // Optimized move handler with fast throttling for smooth dragging
+  const handleMove = useOptimizedDragHandler((e: MouseEvent | TouchEvent) => {
     if (!isDragging && !isResizing) return;
     
     e.preventDefault();
@@ -98,6 +101,12 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
       const newX = Math.max(0, Math.min(globalThis.window.innerWidth - 120, clientX - dragOffset.x));
       const newY = Math.max(60, Math.min(globalThis.window.innerHeight - 120, clientY - dragOffset.y));
       
+      // Direct DOM manipulation for immediate visual feedback
+      if (windowRef.current) {
+        optimizeTransform(windowRef.current, newX, newY);
+      }
+      
+      // Debounced state update
       onUpdate(codeWindow.id, {
         position: { x: newX, y: newY }
       });
@@ -106,18 +115,23 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
       const newWidth = Math.max(isMobile ? 140 : 300, Math.min(globalThis.window.innerWidth - rect.left, clientX - rect.left + 10));
       const newHeight = Math.max(120, Math.min(globalThis.window.innerHeight - rect.top, clientY - rect.top + 10));
       
+      // Direct DOM manipulation for smooth resizing
+      windowRef.current.style.width = `${newWidth}px`;
+      windowRef.current.style.height = `${newHeight}px`;
+      
+      // Debounced state update
       onUpdate(codeWindow.id, {
         size: { width: newWidth, height: newHeight }
       });
     }
-  }, 16, [isDragging, isResizing, dragOffset, codeWindow.id, onUpdate, isMobile, isMaximized]);
+  }, [isDragging, isResizing, dragOffset, codeWindow.id, onUpdate, isMobile, isMaximized]);
 
-  const handleEnd = useOptimizedEventHandler(() => {
+  const handleEnd = useCallback(() => {
     setIsDragging(false);
     setIsResizing(false);
   }, []);
 
-  const toggleMaximize = useOptimizedEventHandler(() => {
+  const toggleMaximize = useCallback(() => {
     triggerHapticFeedback('medium');
     if (isMaximized) {
       onUpdate(codeWindow.id, {
@@ -144,9 +158,9 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     if (isDragging || isResizing) {
       const options = { passive: false };
       document.addEventListener('mousemove', handleMove);
-      document.addEventListener('mouseup', handleEnd);
+      document.addEventListener('mouseup', handleEnd, { passive: true });
       document.addEventListener('touchmove', handleMove, options);
-      document.addEventListener('touchend', handleEnd);
+      document.addEventListener('touchend', handleEnd, { passive: true });
     }
 
     return () => {
@@ -161,7 +175,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     onUpdate(codeWindow.id, { code: newCode });
   }, 100, [codeWindow.id, onUpdate]);
 
-  const handleRunCode = useOptimizedEventHandler(() => {
+  const handleRunCode = useCallback(() => {
     console.log(`Running ${codeWindow.language} code:`, codeWindow.code);
     triggerHapticFeedback('medium');
     if (langConfig.previewable) {
@@ -170,7 +184,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     }
   }, [codeWindow.language, codeWindow.code, langConfig.previewable]);
 
-  const handleTogglePreview = useOptimizedEventHandler(() => {
+  const handleTogglePreview = useCallback(() => {
     setShowPreview(!showPreview);
     if (!showPreview) {
       setPreviewKey(prev => prev + 1);
@@ -178,7 +192,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     triggerHapticFeedback('light');
   }, [showPreview]);
 
-  const handleEdit = useOptimizedEventHandler(() => {
+  const handleEdit = useCallback(() => {
     triggerHapticFeedback('medium');
     if (onEdit) {
       onEdit(codeWindow.id);
@@ -230,7 +244,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
       ref={windowRef}
       className={`absolute bg-white rounded-lg shadow-xl border-2 ${langConfig.borderColor} ${
         isDragging ? 'cursor-grabbing shadow-2xl scale-105' : 'cursor-grab'
-      } select-none overflow-hidden transition-all duration-200`}
+      } select-none overflow-hidden transition-transform duration-100 will-change-transform`}
       style={{
         left: codeWindow.position.x,
         top: codeWindow.position.y,
