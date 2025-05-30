@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
@@ -16,11 +15,12 @@ interface CodeWindowProps {
 }
 
 const LANGUAGES = {
-  javascript: { name: 'JavaScript', color: '#F7DF1E', icon: '🟨' },
+  javascript: { name: 'JavaScript', color: '#F7DF1E', icon: '⚡' },
   python: { name: 'Python', color: '#3776AB', icon: '🐍' },
   html: { name: 'HTML', color: '#E34F26', icon: '🌐' },
   css: { name: 'CSS', color: '#1572B6', icon: '🎨' },
   react: { name: 'React', color: '#61DAFB', icon: '⚛️' },
+  vue: { name: 'Vue', color: '#4FC08D', icon: '💚' },
   java: { name: 'Java', color: '#007396', icon: '☕' },
   cpp: { name: 'C++', color: '#00599C', icon: '⚙️' },
   php: { name: 'PHP', color: '#777BB4', icon: '🐘' },
@@ -54,17 +54,19 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
     return () => globalThis.window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Updated language colors to match the new design
   const languageColors = {
-    javascript: 'border-orange-400 bg-orange-50',
-    html: 'border-blue-400 bg-blue-50',
-    css: 'border-purple-400 bg-purple-50',
-    python: 'border-green-400 bg-green-50',
-    java: 'border-red-400 bg-red-50',
-    cpp: 'border-indigo-400 bg-indigo-50',
+    javascript: 'border-yellow-400 bg-yellow-50',
+    html: 'border-orange-400 bg-orange-50',
+    css: 'border-blue-400 bg-blue-50',
     react: 'border-cyan-400 bg-cyan-50',
-    php: 'border-purple-600 bg-purple-50',
-    swift: 'border-orange-600 bg-orange-50',
-    go: 'border-blue-600 bg-blue-50',
+    vue: 'border-green-400 bg-green-50',
+    python: 'border-blue-600 bg-blue-50',
+    java: 'border-blue-700 bg-blue-50',
+    cpp: 'border-blue-800 bg-blue-50',
+    php: 'border-purple-500 bg-purple-50',
+    swift: 'border-orange-500 bg-orange-50',
+    go: 'border-cyan-500 bg-cyan-50',
     rust: 'border-gray-800 bg-gray-50',
     sql: 'border-blue-700 bg-blue-50'
   };

@@ -1,18 +1,23 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Plus, Play, Code, Smartphone, Monitor, Menu, ChevronDown, Settings, X, Eye, Move, Home, BarChart3 } from 'lucide-react';
+import { Plus, Play, Code, Smartphone, Monitor, Menu, ChevronDown, Settings, X, Eye, Move, Home, BarChart3, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CodeWindow from '@/components/CodeWindow';
 import CanvasBackground from '@/components/CanvasBackground';
 import NewWindowDialog from '@/components/NewWindowDialog';
-import MobileFloatingMenu from '@/components/MobileFloatingMenu';
+import EnhancedFAB from '@/components/EnhancedFAB';
+import Library from '@/components/Library';
+import Settings from '@/components/Settings';
 import { CodeWindowType } from '@/types/CodeWindow';
+import { LibraryItem } from '@/types/Library';
+import { useLibrary } from '@/hooks/useLibrary';
 
 const LANGUAGES = {
-  javascript: { name: 'JavaScript', color: '#F7DF1E', icon: '🟨' },
+  javascript: { name: 'JavaScript', color: '#F7DF1E', icon: '⚡' },
   python: { name: 'Python', color: '#3776AB', icon: '🐍' },
   html: { name: 'HTML', color: '#E34F26', icon: '🌐' },
   css: { name: 'CSS', color: '#1572B6', icon: '🎨' },
   react: { name: 'React', color: '#61DAFB', icon: '⚛️' },
+  vue: { name: 'Vue', color: '#4FC08D', icon: '💚' },
   java: { name: 'Java', color: '#007396', icon: '☕' },
   cpp: { name: 'C++', color: '#00599C', icon: '⚙️' },
   php: { name: 'PHP', color: '#777BB4', icon: '🐘' },
@@ -68,6 +73,13 @@ const HamburgerMenu = ({ isOpen, onToggle, onItemClick }) => (
           <span>Dashboard</span>
         </button>
         <button
+          onClick={() => onItemClick('library')}
+          className="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 touch-manipulation min-h-[44px] flex items-center gap-3"
+        >
+          <Database className="w-4 h-4" />
+          <span>Library</span>
+        </button>
+        <button
           onClick={() => onItemClick('settings')}
           className="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 touch-manipulation min-h-[44px] flex items-center gap-3"
         >
@@ -90,6 +102,10 @@ const Index = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [hamburgerMenuOpen, setHamburgerMenuOpen] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  
+  const { addItem } = useLibrary();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -133,6 +149,7 @@ const Index = () => {
       html: '<!DOCTYPE html>\n<html>\n<head>\n  <title>Mobile Page</title>\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n</head>\n<body style="font-family: Arial; padding: 20px; text-align: center;">\n  <h1 style="color: #E34F26;">Hello HTML!</h1>\n  <p>Mobile-optimized content</p>\n  <button onclick="alert(\'Hello!\')" style="padding: 10px 20px; font-size: 16px;">Tap Me</button>\n</body>\n</html>',
       css: '.mobile-container {\n  padding: 20px;\n  background: linear-gradient(45deg, #1572B6, #33A9DC);\n  border-radius: 15px;\n  color: white;\n  text-align: center;\n  transition: transform 0.3s ease;\n  touch-action: manipulation;\n}\n\n.mobile-container:active {\n  transform: scale(0.98);\n}\n\n@media (max-width: 768px) {\n  .mobile-container {\n    font-size: 18px;\n    padding: 15px;\n  }\n}',
       react: 'function MobileApp() {\n  const [count, setCount] = useState(0);\n  \n  return (\n    <div style={{\n      padding: "20px",\n      textAlign: "center",\n      fontFamily: "Arial"\n    }}>\n      <h1>Mobile React App</h1>\n      <p style={{ fontSize: "18px" }}>Count: {count}</p>\n      <button \n        onClick={() => setCount(count + 1)}\n        style={{\n          padding: "12px 24px",\n          fontSize: "16px",\n          minHeight: "44px",\n          touchAction: "manipulation"\n        }}\n      >\n        Tap to Increment\n      </button>\n    </div>\n  );\n}',
+      vue: 'const app = new Vue({\n  el: "#app",\n  data: {\n    message: "Hello Vue!"\n  }\n});',
       java: 'public class MobileHello {\n    public static void main(String[] args) {\n        System.out.println("Hello from Java on Mobile!");\n        \n        int[] numbers = {1, 2, 3, 4, 5};\n        int sum = 0;\n        for (int num : numbers) {\n            sum += num;\n        }\n        System.out.println("Sum: " + sum);\n    }\n}',
       cpp: '#include <iostream>\n#include <vector>\n\nint main() {\n    std::cout << "Hello from C++ Mobile!" << std::endl;\n    \n    std::vector<int> numbers = {1, 2, 3, 4, 5};\n    int sum = 0;\n    for (int num : numbers) {\n        sum += num;\n    }\n    \n    std::cout << "Sum: " << sum << std::endl;\n    return 0;\n}',
       php: '<?php\necho "Hello from PHP Mobile!\\n";\n\n$numbers = [1, 2, 3, 4, 5];\n$sum = array_sum($numbers);\n\necho "Sum: " . $sum . "\\n";\n?>',
@@ -169,6 +186,45 @@ const Index = () => {
     setIsNewWindowOpen(false);
   }, [highestZIndex, nextId, isMobile]);
 
+  const createFromLibraryItem = useCallback((item: LibraryItem) => {
+    const lang = LANGUAGES[item.language] || { name: item.language, color: '#666', icon: '📄' };
+    
+    const newWindow: CodeWindowType = {
+      id: nextId.toString(),
+      title: item.title,
+      language: item.language,
+      code: item.code,
+      position: { 
+        x: Math.random() * (isMobile ? 50 : 200) + 20, 
+        y: Math.random() * (isMobile ? 100 : 150) + 80 
+      },
+      size: { 
+        width: isMobile ? Math.min(350, globalThis.window.innerWidth - 40) : 400, 
+        height: isMobile ? 300 : 350
+      },
+      zIndex: highestZIndex + 1
+    };
+
+    setWindows(prev => [...prev, newWindow]);
+    setNextId(prev => prev + 1);
+    setHighestZIndex(prev => prev + 1);
+    setShowLibrary(false);
+  }, [highestZIndex, nextId, isMobile]);
+
+  const saveToLibrary = useCallback((windowId: string) => {
+    const window = windows.find(w => w.id === windowId);
+    if (window) {
+      addItem({
+        title: window.title,
+        language: window.language,
+        code: window.code,
+        category: 'snippets',
+        tags: [window.language],
+        description: `Saved from ${window.title} widget`
+      });
+    }
+  }, [windows, addItem]);
+
   const handleCanvasClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (e.target === e.currentTarget) {
       setActiveDropdown(null);
@@ -190,7 +246,12 @@ const Index = () => {
   const handleHamburgerMenuClick = (item: string) => {
     console.log(`${item} clicked`);
     setHamburgerMenuOpen(false);
-    // Add functionality for dashboard and settings here
+    
+    if (item === 'library') {
+      setShowLibrary(true);
+    } else if (item === 'settings') {
+      setShowSettings(true);
+    }
   };
 
   const fileMenuItems = [
@@ -337,9 +398,30 @@ const Index = () => {
         </div>
       )}
 
-      {/* Mobile Floating Menu */}
+      {/* Enhanced FAB replaces MobileFloatingMenu */}
       {isMobile && (
-        <MobileFloatingMenu onCreateWindow={(lang) => addNewWindow(lang, true)} />
+        <EnhancedFAB onCreateWindow={(lang) => addNewWindow(lang, true)} />
+      )}
+
+      {/* Library Modal */}
+      {showLibrary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-6xl h-[80vh] overflow-hidden">
+            <Library 
+              onCreateFromLibrary={createFromLibraryItem}
+              onClose={() => setShowLibrary(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-4xl h-[80vh] overflow-hidden">
+            <Settings onClose={() => setShowSettings(false)} />
+          </div>
+        </div>
       )}
 
       {/* New Window Dialog (Desktop) */}

@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { X, Edit3, GripHorizontal, Eye, Code2, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -174,6 +173,28 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
   const lineCount = code.split('\n').length;
   const isLargeWidget = size.width > 200 && size.height > 160;
 
+  // Get proper language colors based on the language
+  const getLanguageAccentColor = (language: string) => {
+    const colorMap = {
+      'JavaScript': '#F7DF1E',
+      'HTML': '#E34F26',
+      'CSS': '#1572B6',
+      'React': '#61DAFB',
+      'Vue': '#4FC08D',
+      'Python': '#3776AB',
+      'Java': '#007396',
+      'C++': '#00599C',
+      'PHP': '#777BB4',
+      'Swift': '#FA7343',
+      'Go': '#00ADD8',
+      'Rust': '#000000',
+      'SQL': '#336791'
+    };
+    return colorMap[language] || '#6B7280';
+  };
+
+  const accentColor = getLanguageAccentColor(title);
+
   return (
     <div
       className={`absolute bg-white rounded-2xl shadow-xl border-2 ${languageColor} ${
@@ -187,7 +208,8 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
         zIndex: isDragging || isResizing ? 9999 : zIndex,
         touchAction: 'none',
         transform: isDragging ? 'scale(1.05)' : isResizing ? 'scale(1.02)' : 'scale(1)',
-        transition: (isDragging || isResizing) ? 'none' : 'transform 0.2s ease-out, box-shadow 0.2s ease-out'
+        transition: (isDragging || isResizing) ? 'none' : 'transform 0.2s ease-out, box-shadow 0.2s ease-out',
+        borderColor: accentColor
       }}
     >
       {/* Widget Header - Enhanced with more info */}
@@ -264,14 +286,17 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
           )}
         </div>
         
-        {/* Action Button */}
+        {/* Action Button with language color */}
         <div className="p-2 border-t border-gray-200">
           <Button
             size="sm"
             onClick={handleEditClick}
             onTouchStart={handleEditClick}
-            className="h-8 w-full text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium z-30 relative touch-manipulation"
-            style={{ touchAction: 'manipulation' }}
+            className="h-8 w-full text-xs text-white font-medium z-30 relative touch-manipulation"
+            style={{ 
+              backgroundColor: accentColor,
+              touchAction: 'manipulation'
+            }}
           >
             <Edit3 className="w-3 h-3 mr-1" />
             Edit Code
