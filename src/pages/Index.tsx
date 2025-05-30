@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Plus, Play, Code, Smartphone, Monitor, Menu, ChevronDown, Settings, X, Eye, Move, Home, BarChart3, Database } from 'lucide-react';
+import { Plus, Play, Code, Smartphone, Monitor, Menu, ChevronDown, Settings as SettingsIcon, X, Eye, Move, Home, BarChart3, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CodeWindow from '@/components/CodeWindow';
 import CanvasBackground from '@/components/CanvasBackground';
@@ -83,7 +84,7 @@ const HamburgerMenu = ({ isOpen, onToggle, onItemClick }) => (
           onClick={() => onItemClick('settings')}
           className="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 touch-manipulation min-h-[44px] flex items-center gap-3"
         >
-          <Settings className="w-4 h-4" />
+          <SettingsIcon className="w-4 h-4" />
           <span>Settings</span>
         </button>
       </div>
