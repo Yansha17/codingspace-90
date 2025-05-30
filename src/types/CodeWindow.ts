@@ -13,4 +13,5 @@ export interface CodeWindowType {
     height: number;
   };
   zIndex: number;
+  showPreview?: boolean;
 }
