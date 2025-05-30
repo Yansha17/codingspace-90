@@ -4,7 +4,6 @@ import MobileCodeEditor from './MobileCodeEditor';
 import MobileWidgetHeader from './MobileWidgetHeader';
 import MobileWidgetContent from './MobileWidgetContent';
 import MobileWidgetResizeHandle from './MobileWidgetResizeHandle';
-import MobileWidgetDragIndicator from './MobileWidgetDragIndicator';
 import { getLanguageConfig } from '@/config/languages';
 
 interface MobileWidgetProps {
@@ -133,8 +132,6 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
         onMouseDown={handleWidgetMouseDown}
         onTouchStart={handleWidgetTouchStart}
       >
-        <MobileWidgetDragIndicator isDragging={isDragging} />
-
         <MobileWidgetHeader
           title={title}
           langName={langName}
@@ -157,10 +154,12 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
           previewKey={currentPreviewKey}
         />
 
-        <MobileWidgetResizeHandle
-          onResize={onResize}
-          currentSize={size}
-        />
+        {!isMaximized && (
+          <MobileWidgetResizeHandle
+            onResize={onResize}
+            currentSize={size}
+          />
+        )}
       </div>
     </>
   );

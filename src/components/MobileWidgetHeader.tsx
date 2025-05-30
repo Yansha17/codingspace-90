@@ -80,42 +80,29 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
       </div>
       
       <div className="flex items-center gap-1">
-        {/* Preview/Code Toggle Buttons */}
+        {/* Preview Toggle - Show for previewable languages */}
         {langConfig.previewable && (
-          <>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleTogglePreview}
-              onTouchStart={handleTogglePreview}
-              className={`h-6 w-6 p-0 rounded-md z-20 relative touch-manipulation transition-all duration-200 ${
-                showPreview 
-                  ? 'bg-emerald-600 hover:bg-emerald-700' 
-                  : 'hover:bg-slate-600'
-              }`}
-              style={{ touchAction: 'manipulation' }}
-            >
-              <Eye className={`w-3 h-3 ${showPreview ? 'text-white' : 'text-emerald-400'}`} />
-            </Button>
-            
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleTogglePreview}
-              onTouchStart={handleTogglePreview}
-              className={`h-6 w-6 p-0 rounded-md z-20 relative touch-manipulation transition-all duration-200 ${
-                !showPreview 
-                  ? 'bg-blue-600 hover:bg-blue-700' 
-                  : 'hover:bg-slate-600'
-              }`}
-              style={{ touchAction: 'manipulation' }}
-            >
-              <Code2 className={`w-3 h-3 ${!showPreview ? 'text-white' : 'text-blue-400'}`} />
-            </Button>
-          </>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleTogglePreview}
+            onTouchStart={handleTogglePreview}
+            className={`h-6 w-6 p-0 rounded-md z-20 relative touch-manipulation transition-all duration-200 ${
+              showPreview 
+                ? 'bg-emerald-600 hover:bg-emerald-700' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
+            style={{ touchAction: 'manipulation' }}
+          >
+            {showPreview ? (
+              <Eye className="w-3 h-3 text-white" />
+            ) : (
+              <Code2 className="w-3 h-3 text-white" />
+            )}
+          </Button>
         )}
         
-        {/* Run Button - Show for runnable languages */}
+        {/* Run Button - Show for runnable languages that aren't previewable */}
         {langConfig.runnable && !langConfig.previewable && (
           <Button
             size="sm"

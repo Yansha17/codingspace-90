@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronUp, Play, Eye, Code as CodeIcon } from 'lucide-react';
+import { ChevronDown, ChevronUp, Play, Eye, Code as CodeIcon, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -27,7 +27,7 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
   code,
   onChange
 }) => {
-  const [showPreview, setShowPreview] = useState(false);
+  const [view, setView] = useState<'code' | 'preview' | 'split'>('code');
   const [isExpanded, setIsExpanded] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -55,16 +55,14 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
   const handleRunCode = () => {
     console.log(`Running ${language} code:`, code);
     if (['html', 'css', 'javascript'].includes(language)) {
-      setShowPreview(true);
-      // Force refresh the preview
+      setView('preview');
       setPreviewKey(prev => prev + 1);
     }
   };
 
-  const handleTogglePreview = () => {
-    setShowPreview(!showPreview);
-    if (!showPreview) {
-      // Force refresh when showing preview
+  const handleViewChange = (newView: 'code' | 'preview' | 'split') => {
+    setView(newView);
+    if ((newView === 'preview' || newView === 'split') && ['html', 'css', 'javascript'].includes(language)) {
       setPreviewKey(prev => prev + 1);
     }
   };
@@ -100,6 +98,8 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
     }
   };
 
+  const canPreview = ['html', 'css', 'javascript'].includes(language);
+
   // Auto-expand when opened
   useEffect(() => {
     if (isOpen) {
@@ -117,29 +117,47 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
           <SheetHeader className="flex flex-row items-center justify-between p-4 pb-2 border-b border-gray-200">
             <SheetTitle className="text-lg">{title}</SheetTitle>
             <div className="flex items-center gap-2">
+              {/* View Toggle Buttons */}
+              <div className="flex items-center bg-gray-200 rounded-lg p-1">
+                <Button
+                  size="sm"
+                  variant={view === 'code' ? 'default' : 'ghost'}
+                  onClick={() => handleViewChange('code')}
+                  className="h-8 px-3 rounded-md transition-all duration-200"
+                >
+                  <CodeIcon className="w-4 h-4" />
+                </Button>
+                {canPreview && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant={view === 'split' ? 'default' : 'ghost'}
+                      onClick={() => handleViewChange('split')}
+                      className="h-8 px-3 rounded-md transition-all duration-200"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={view === 'preview' ? 'default' : 'ghost'}
+                      onClick={() => handleViewChange('preview')}
+                      className="h-8 px-3 rounded-md transition-all duration-200"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
+              
+              {/* Run Button */}
               {['javascript', 'python', 'html', 'css'].includes(language) && (
                 <Button
                   size="sm"
-                  variant="ghost"
                   onClick={handleRunCode}
-                  className="h-8 w-8 p-0 hover:bg-green-100 touch-manipulation"
+                  className="h-8 px-4 bg-green-600 hover:bg-green-700 touch-manipulation"
                 >
-                  <Play className="w-4 h-4 text-green-600" />
-                </Button>
-              )}
-              
-              {['html', 'css', 'javascript'].includes(language) && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleTogglePreview}
-                  className="h-8 w-8 p-0 hover:bg-blue-100 touch-manipulation"
-                >
-                  {showPreview ? (
-                    <CodeIcon className="w-4 h-4 text-blue-600" />
-                  ) : (
-                    <Eye className="w-4 h-4 text-blue-600" />
-                  )}
+                  <Play className="w-4 h-4 mr-2" />
+                  Run
                 </Button>
               )}
               
@@ -159,39 +177,96 @@ const MobileCodeEditor: React.FC<MobileCodeEditorProps> = ({
           </SheetHeader>
           
           <div className="flex flex-col h-full overflow-hidden">
-            <div className={`${showPreview ? 'h-1/2' : 'h-full'} flex-1 min-h-0`}>
-              <div className="relative h-full bg-gray-900 rounded-none overflow-hidden">
-                <textarea
-                  ref={textareaRef}
-                  value={code}
-                  onChange={handleChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder={getLanguageComment()}
-                  className="absolute inset-0 w-full h-full pl-4 pr-4 py-3 bg-transparent text-white font-mono resize-none outline-none text-base border-none"
-                  style={{
-                    lineHeight: '1.5',
-                    tabSize: 2,
-                    fontSize: '16px',
-                    WebkitAppearance: 'none',
-                    borderRadius: 0,
-                    minHeight: '100%'
-                  }}
-                  spellCheck={false}
-                  autoCapitalize="off"
-                  autoCorrect="off"
-                  autoComplete="off"
-                  data-gramm="false"
-                />
+            {view === 'code' ? (
+              <div className="h-full">
+                <div className="relative h-full bg-gray-900 rounded-none overflow-hidden">
+                  <textarea
+                    ref={textareaRef}
+                    value={code}
+                    onChange={handleChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder={getLanguageComment()}
+                    className="absolute inset-0 w-full h-full pl-4 pr-4 py-3 bg-transparent text-white font-mono resize-none outline-none text-base border-none"
+                    style={{
+                      lineHeight: '1.5',
+                      tabSize: 2,
+                      fontSize: '16px',
+                      WebkitAppearance: 'none',
+                      borderRadius: 0,
+                      minHeight: '100%'
+                    }}
+                    spellCheck={false}
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    autoComplete="off"
+                    data-gramm="false"
+                  />
+                </div>
               </div>
-            </div>
-            
-            {showPreview && ['html', 'css', 'javascript'].includes(language) && (
-              <div className="h-1/2 border-t border-gray-200 min-h-0">
-                <CodePreview 
-                  key={previewKey}
-                  language={language} 
-                  code={code} 
-                />
+            ) : view === 'preview' ? (
+              <div className="h-full">
+                {canPreview ? (
+                  <CodePreview 
+                    key={previewKey}
+                    language={language} 
+                    code={code} 
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center bg-gray-100">
+                    <div className="text-center">
+                      <div className="text-gray-400 mb-2">
+                        <Eye className="w-12 h-12 mx-auto" />
+                      </div>
+                      <p className="text-gray-600">Preview not available for {language}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="h-full flex">
+                <div className="w-1/2 h-full border-r border-gray-200">
+                  <div className="relative h-full bg-gray-900 rounded-none overflow-hidden">
+                    <textarea
+                      ref={textareaRef}
+                      value={code}
+                      onChange={handleChange}
+                      onKeyDown={handleKeyDown}
+                      placeholder={getLanguageComment()}
+                      className="absolute inset-0 w-full h-full pl-4 pr-4 py-3 bg-transparent text-white font-mono resize-none outline-none text-base border-none"
+                      style={{
+                        lineHeight: '1.5',
+                        tabSize: 2,
+                        fontSize: '16px',
+                        WebkitAppearance: 'none',
+                        borderRadius: 0,
+                        minHeight: '100%'
+                      }}
+                      spellCheck={false}
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      autoComplete="off"
+                      data-gramm="false"
+                    />
+                  </div>
+                </div>
+                <div className="w-1/2 h-full">
+                  {canPreview ? (
+                    <CodePreview 
+                      key={previewKey}
+                      language={language} 
+                      code={code} 
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center bg-gray-100">
+                      <div className="text-center">
+                        <div className="text-gray-400 mb-2">
+                          <Eye className="w-8 h-8 mx-auto" />
+                        </div>
+                        <p className="text-gray-600 text-sm">Preview not available</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
