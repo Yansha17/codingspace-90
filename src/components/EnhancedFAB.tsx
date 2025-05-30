@@ -29,18 +29,25 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
 
   const handleLanguageSelect = (languageKey: string) => {
     console.log(`Creating window for language: ${languageKey}`);
+    console.log('onCreateWindow function:', onCreateWindow);
+    
     // Call the parent's function to create the window
-    if (onCreateWindow) {
+    if (onCreateWindow && typeof onCreateWindow === 'function') {
       onCreateWindow(languageKey);
+    } else {
+      console.error('onCreateWindow is not a function:', onCreateWindow);
     }
     setIsExpanded(false);
   };
 
-  const handleToggle = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleToggle = () => {
     console.log('FAB toggle clicked, isExpanded:', !isExpanded);
     setIsExpanded(!isExpanded);
+  };
+
+  const handleLanguageClick = (key: string) => {
+    console.log(`Language button clicked: ${key}`);
+    handleLanguageSelect(key);
   };
 
   return (
@@ -67,12 +74,7 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
               }}
             >
               <Button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log(`Language button clicked: ${key}`);
-                  handleLanguageSelect(key);
-                }}
+                onClick={() => handleLanguageClick(key)}
                 className="h-12 px-4 rounded-full shadow-lg border-2 border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:shadow-xl"
                 style={{
                   backgroundColor: lang.color,
