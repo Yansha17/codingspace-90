@@ -61,6 +61,9 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
 
   console.log('FAB: Rendering, isExpanded:', isExpanded);
 
+  // Create array of languages in reverse order for bottom-to-top animation
+  const languageEntries = Object.entries(LANGUAGES);
+
   return (
     <div style={{
       position: 'fixed',
@@ -89,14 +92,14 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
         />
       )}
 
-      {/* Vertical Language List */}
+      {/* Vertical Language List - Bottom to Top Animation */}
       <div style={{
         position: 'absolute',
         bottom: '80px',
         right: '8px',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         opacity: isExpanded ? 1 : 0,
-        transform: isExpanded ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.9)',
+        transform: isExpanded ? 'translateY(0) scale(1)' : 'translateY(40px) scale(0.8)',
         pointerEvents: isExpanded ? 'auto' : 'none',
         maxHeight: '60vh',
         overflowY: 'auto',
@@ -106,20 +109,21 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
           ref={scrollContainerRef}
           style={{
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: 'column-reverse', // This reverses the order for bottom-to-top
             gap: '8px',
             alignItems: 'stretch',
-            paddingBottom: '8px'
+            paddingTop: '8px'
           }}
         >
-          {Object.entries(LANGUAGES).reverse().map(([key, lang], index) => (
+          {languageEntries.map(([key, lang], index) => (
             <div
               key={key}
               style={{
-                transform: `translateY(${isExpanded ? '0' : '20px'})`,
+                transform: `translateY(${isExpanded ? '0' : '30px'})`,
                 opacity: isExpanded ? 1 : 0,
                 transition: `all 0.4s cubic-bezier(0.4, 0, 0.2, 1)`,
-                transitionDelay: isExpanded ? `${index * 40}ms` : '0ms'
+                // Reverse the delay calculation for bottom-to-top effect
+                transitionDelay: isExpanded ? `${(languageEntries.length - index - 1) * 50}ms` : '0ms'
               }}
             >
               <Button
