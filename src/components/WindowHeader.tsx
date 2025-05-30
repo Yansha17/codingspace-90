@@ -40,6 +40,10 @@ const WindowHeader: React.FC<WindowHeaderProps> = ({
   onMouseDown,
   onTouchStart
 }) => {
+  // Enhanced preview capability check
+  const previewableLanguages = ['html', 'css', 'javascript', 'react'];
+  const enhancedCanPreview = canPreview || previewableLanguages.includes(language.toLowerCase());
+
   return (
     <div 
       className="flex items-center justify-between p-3 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50 cursor-move active:cursor-grabbing select-none"
@@ -75,7 +79,7 @@ const WindowHeader: React.FC<WindowHeaderProps> = ({
           </Button>
         )}
         
-        {canPreview && (
+        {enhancedCanPreview && (
           <Button
             size="sm"
             variant="ghost"

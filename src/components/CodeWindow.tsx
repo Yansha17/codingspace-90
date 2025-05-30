@@ -193,7 +193,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
 
   const handleRunCode = useCallback(() => {
     console.log(`Running ${codeWindow.language} code:`, codeWindow.code);
-    if (['html', 'css', 'javascript'].includes(codeWindow.language)) {
+    if (['html', 'css', 'javascript', 'react'].includes(codeWindow.language)) {
       setShowPreview(true);
       setPreviewKey(prev => prev + 1);
     }
@@ -215,7 +215,7 @@ const CodeWindow: React.FC<CodeWindowProps> = ({
   }, [codeWindow.id, onEdit]);
 
   const canRun = ['javascript', 'python', 'html', 'css'].includes(codeWindow.language);
-  const canPreview = ['html', 'css', 'javascript'].includes(codeWindow.language);
+  const canPreview = ['html', 'css', 'javascript', 'react'].includes(codeWindow.language);
 
   // Handle widget resize from MobileWidget component
   const handleWidgetResize = useCallback((newSize: { width: number; height: number }) => {
