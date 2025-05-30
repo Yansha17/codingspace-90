@@ -114,6 +114,37 @@ export const createSmoothAnimation = (element: HTMLElement, property: string, fr
   requestAnimationFrame(animate);
 };
 
+// Spring animation with bounce effect for enhanced user experience
+export const createSpringAnimation = (element: HTMLElement, property: string, from: number, to: number, duration: number = 400) => {
+  const start = performance.now();
+  const diff = to - from;
+  
+  const animate = (currentTime: number) => {
+    const elapsed = currentTime - start;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Spring easing function with slight bounce
+    const easeOutBack = (t: number): number => {
+      const c1 = 1.70158;
+      const c3 = c1 + 1;
+      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    };
+    
+    const currentValue = from + (diff * easeOutBack(progress));
+    
+    (element.style as any)[property] = `${currentValue}px`;
+    
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      element.style.willChange = 'auto';
+    }
+  };
+  
+  element.style.willChange = property;
+  requestAnimationFrame(animate);
+};
+
 // Performance monitoring for drag operations
 export const createPerformanceMonitor = () => {
   let frameCount = 0;
