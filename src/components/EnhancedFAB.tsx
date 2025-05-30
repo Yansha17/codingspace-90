@@ -33,7 +33,9 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
     setIsExpanded(false);
   };
 
-  const handleToggle = () => {
+  const handleToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsExpanded(!isExpanded);
   };
 
@@ -61,7 +63,11 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
               }}
             >
               <Button
-                onClick={() => handleLanguageSelect(key)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleLanguageSelect(key);
+                }}
                 className="h-12 px-4 rounded-full shadow-lg border-2 border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:shadow-xl"
                 style={{
                   backgroundColor: lang.color,
@@ -80,7 +86,7 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = ({ onCreateWindow }) => {
       {/* Main FAB Button */}
       <Button
         onClick={handleToggle}
-        className={`w-16 h-16 rounded-full shadow-2xl transition-all duration-300 ease-out border-4 border-white/20 backdrop-blur-sm ${
+        className={`w-16 h-16 rounded-full shadow-2xl transition-all duration-300 ease-out border-4 border-white/20 backdrop-blur-sm touch-manipulation ${
           isExpanded 
             ? 'bg-red-500 hover:bg-red-600 rotate-45 scale-110' 
             : 'bg-gradient-to-br from-blue-500 via-purple-600 to-blue-700 hover:from-blue-600 hover:via-purple-700 hover:to-blue-800 hover:scale-110'

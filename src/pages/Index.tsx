@@ -1,6 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Plus, Play, Code, Smartphone, Monitor, Menu, ChevronDown, X, Eye, Move, Home, BarChart3, Database } from 'lucide-react';
-import { SettingsIcon } from 'lucide-react';
+import { Plus, Play, Code, Smartphone, Monitor, Menu, ChevronDown, X, Eye, Move, Home, BarChart3, Database, Settings as SettingsIcon, Zap, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CodeWindow from '@/components/CodeWindow';
 import CanvasBackground from '@/components/CanvasBackground';
@@ -302,72 +301,146 @@ const Index = () => {
   }));
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-gray-50 relative">
-      {/* Mobile-Optimized Header */}
-      <div className="absolute top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-200">
+    <div className="h-screen w-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 relative">
+      {/* Enhanced Header */}
+      <div className="absolute top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
         {isMobile ? (
-          // Mobile Menu
-          <div className="px-4 py-2">
+          // Enhanced Mobile Header
+          <div className="px-4 py-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <HamburgerMenu
                   isOpen={hamburgerMenuOpen}
                   onToggle={() => setHamburgerMenuOpen(!hamburgerMenuOpen)}
                   onItemClick={handleHamburgerMenuClick}
                 />
-                <Code className="w-6 h-6 text-blue-600" />
-                <h1 className="text-lg font-bold text-gray-900">Code Studio</h1>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                    <Code className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold text-gray-900">Code Studio</h1>
+                    <p className="text-xs text-gray-500">Mobile Playground</p>
+                  </div>
+                </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">
-                  {windows.length} window{windows.length !== 1 ? 's' : ''}
-                </span>
-                <MenuDropdown
-                  title="+"
-                  items={languageMenuItems}
-                  onItemClick={(item) => item.action()}
-                  isOpen={activeDropdown === 'new'}
-                  onToggle={() => toggleDropdown('new')}
-                />
-                <MenuDropdown
-                  title="⚙️"
-                  items={fileMenuItems}
-                  onItemClick={(item) => item.action()}
-                  isOpen={activeDropdown === 'settings'}
-                  onToggle={() => toggleDropdown('settings')}
-                />
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 bg-blue-100 px-2 py-1 rounded-full">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-medium text-blue-700">
+                    {windows.length} widget{windows.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 px-2 border-blue-200 text-blue-600 hover:bg-blue-50"
+                    onClick={() => toggleDropdown('new')}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 px-2 border-gray-200 text-gray-600 hover:bg-gray-50"
+                    onClick={() => toggleDropdown('settings')}
+                  >
+                    <SettingsIcon className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </div>
+            
+            {/* Mobile Quick Actions */}
+            {activeDropdown === 'new' && (
+              <div className="mt-3 grid grid-cols-4 gap-2">
+                {Object.entries(LANGUAGES).slice(0, 8).map(([key, lang]) => (
+                  <Button
+                    key={key}
+                    size="sm"
+                    variant="outline"
+                    className="h-12 flex flex-col items-center gap-1 text-xs"
+                    onClick={() => {
+                      addNewWindow(key);
+                      setActiveDropdown(null);
+                    }}
+                  >
+                    <span className="text-lg">{lang.icon}</span>
+                    <span className="truncate">{lang.name}</span>
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
-          // Desktop Menu
-          <div className="px-6 py-3">
+          // Enhanced Desktop Header
+          <div className="px-6 py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-3">
                   <HamburgerMenu
                     isOpen={hamburgerMenuOpen}
                     onToggle={() => setHamburgerMenuOpen(!hamburgerMenuOpen)}
                     onItemClick={handleHamburgerMenuClick}
                   />
-                  <Code className="w-6 h-6 text-blue-600" />
-                  <h1 className="text-xl font-bold text-gray-900">Interactive Coding Playground</h1>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <Code className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        Interactive Coding Playground
+                      </h1>
+                      <p className="text-sm text-gray-600">Build, test, and share code instantly</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Monitor className="w-4 h-4" />
-                  <span>Desktop View</span>
+                
+                <div className="flex items-center gap-3 bg-gray-100 px-3 py-2 rounded-lg">
+                  <Monitor className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-700">Desktop View</span>
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 </div>
               </div>
               
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={() => setIsNewWindowOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  New Window
-                </Button>
+              <div className="flex items-center gap-4">
+                {/* Stats */}
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4" />
+                    <span>{windows.filter(w => ['html', 'css', 'javascript'].includes(w.language)).length} Web</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    <span>{windows.length} Total</span>
+                  </div>
+                </div>
+                
+                {/* Quick Actions */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowLibrary(true)}
+                    className="gap-2 border-purple-200 text-purple-600 hover:bg-purple-50"
+                  >
+                    <Database className="w-4 h-4" />
+                    Library
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setIsNewWindowOpen(true)}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white gap-2 shadow-lg"
+                  >
+                    <Plus className="w-4 h-4" />
+                    New Window
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -377,7 +450,7 @@ const Index = () => {
       {/* Canvas */}
       <div 
         ref={canvasRef}
-        className={`absolute inset-0 ${isMobile ? 'pt-16' : 'pt-20'} ${editingWindow ? 'pb-[40vh]' : ''}`}
+        className={`absolute inset-0 ${isMobile ? 'pt-20' : 'pt-24'} ${editingWindow ? 'pb-[40vh]' : ''}`}
         style={{
           transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${canvasScale})`,
           transformOrigin: '0 0',
@@ -401,41 +474,54 @@ const Index = () => {
         ))}
       </div>
 
-      {/* Mobile Welcome State */}
+      {/* Enhanced Welcome State */}
       {windows.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-gray-500 max-w-md p-8">
-            <div className="text-6xl mb-6">📱</div>
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">
+            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
+              <Code className="w-12 h-12 text-white" />
+            </div>
+            <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               {isMobile ? 'Mobile Code Studio' : 'Interactive Coding Playground'}
             </h2>
-            <p className="text-lg mb-8">
+            <p className="text-lg mb-8 text-gray-600">
               {isMobile 
                 ? 'Tap the + button to create your first code widget' 
                 : 'Create windows to start coding in any language'
               }
             </p>
-            <div className="text-sm text-gray-400">
-              {isMobile 
-                ? 'Create widgets • Drag to move • Tap Edit to code'
-                : 'Click "New Window" in the menu bar to get started'
-              }
+            <div className="flex items-center justify-center gap-4 text-sm text-gray-400">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>Create widgets</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span>Drag to move</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Edit & preview</span>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Mobile indicator */}
-      {isMobile && !editingWindow && (
-        <div className="absolute bottom-20 left-4 right-4 bg-blue-600 text-white p-3 rounded-lg shadow-lg">
-          <div className="flex items-center gap-2">
-            <Smartphone className="w-4 h-4" />
-            <span className="text-sm font-medium">Touch-optimized coding widgets</span>
+      {/* Enhanced Mobile indicator */}
+      {isMobile && !editingWindow && windows.length > 0 && (
+        <div className="absolute bottom-20 left-4 right-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-xl shadow-lg">
+          <div className="flex items-center gap-3">
+            <Smartphone className="w-5 h-5" />
+            <div>
+              <div className="font-medium">Touch-optimized coding</div>
+              <div className="text-sm text-blue-100">Tap edit button to code at bottom</div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Enhanced FAB replaces MobileFloatingMenu */}
+      {/* Enhanced FAB */}
       {isMobile && !editingWindow && (
         <EnhancedFAB onCreateWindow={(lang) => addNewWindow(lang, true)} />
       )}
