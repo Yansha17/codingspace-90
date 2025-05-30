@@ -42,24 +42,27 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
   const [initialSize, setInitialSize] = useState({ width: 0, height: 0 });
   const [showCodePreview, setShowCodePreview] = useState(true);
   const [resizeStartPos, setResizeStartPos] = useState({ x: 0, y: 0 });
-  const [canDrag, setCanDrag] = useState(false);
+  const [isDragEnabled, setIsDragEnabled] = useState(false);
   const [longPressActive, setLongPressActive] = useState(false);
   const resizeRef = useRef<HTMLDivElement>(null);
 
   const longPressOptions = {
-    delay: 750,
+    delay: 500, // Reduced delay for better responsiveness
     onLongPress: () => {
       console.log('Long press detected - enabling drag');
-      setCanDrag(true);
+      setIsDragEnabled(true);
+      setLongPressActive(false);
       // Add haptic feedback for mobile
       if ('vibrate' in navigator) {
-        navigator.vibrate(50);
+        navigator.vibrate([50, 30, 50]); // More noticeable vibration pattern
       }
     },
     onLongPressStart: () => {
+      console.log('Long press started');
       setLongPressActive(true);
     },
     onLongPressEnd: () => {
+      console.log('Long press ended');
       setLongPressActive(false);
     },
   };
@@ -72,66 +75,42 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
     return Math.sqrt(dx * dx + dy * dy);
   };
 
-  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!canDrag) return;
-    
-    e.preventDefault();
-    e.stopPropagation();
-    
+  const handleWidgetInteraction = (e: React.MouseEvent | React.TouchEvent) => {
+    // If drag is enabled, start dragging immediately
+    if (isDragEnabled) {
+      console.log('Drag enabled - starting drag');
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if ('touches' in e) {
+        if (e.touches.length === 1) {
+          onTouchStart(e);
+        } else if (e.touches.length === 2) {
+          setIsResizing(true);
+          setInitialPinchDistance(getDistance(e.touches[0], e.touches[1]));
+          setInitialSize({ width: size.width, height: size.height });
+        }
+      } else {
+        onMouseDown(e);
+      }
+      return;
+    }
+
+    // Otherwise, handle long press
     if ('touches' in e) {
-      if (e.touches.length === 1) {
-        onTouchStart(e);
-      } else if (e.touches.length === 2) {
-        setIsResizing(true);
-        setInitialPinchDistance(getDistance(e.touches[0], e.touches[1]));
-        setInitialSize({ width: size.width, height: size.height });
-      }
-    } else {
-      onMouseDown(e);
-    }
-  };
-
-  const handleWidgetTouch = (e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
       longPress.handlers.onTouchStart(e);
-      if (canDrag) {
-        handleDragStart(e);
-      }
-    }
-  };
-
-  const handleWidgetMouseDown = (e: React.MouseEvent) => {
-    longPress.handlers.onMouseDown(e);
-    if (canDrag) {
-      handleDragStart(e);
+    } else {
+      longPress.handlers.onMouseDown(e);
     }
   };
 
   // Reset drag capability when drag ends
   useEffect(() => {
-    if (!isDragging && canDrag) {
-      setCanDrag(false);
+    if (!isDragging && isDragEnabled) {
+      console.log('Drag ended - disabling drag mode');
+      setIsDragEnabled(false);
     }
-  }, [isDragging, canDrag]);
-
-  const handleDragMouseStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onMouseDown(e);
-  };
-
-  const handleDragTouchStart = (e: React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (e.touches.length === 1) {
-      onTouchStart(e);
-    } else if (e.touches.length === 2) {
-      setIsResizing(true);
-      setInitialPinchDistance(getDistance(e.touches[0], e.touches[1]));
-      setInitialSize({ width: size.width, height: size.height });
-    }
-  };
+  }, [isDragging, isDragEnabled]);
 
   const handleResizeMouseStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -258,8 +237,8 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
 
   return (
     <div
-      className={`absolute bg-white rounded-2xl shadow-xl border-2 ${languageColor} ${
-        isDragging ? 'cursor-grabbing shadow-2xl' : canDrag ? 'cursor-grab' : ''
+      className={`absolute bg-white rounded-2xl shadow-xl border-2 ${
+        isDragging ? 'cursor-grabbing shadow-2xl' : isDragEnabled ? 'cursor-grab' : ''
       } ${isResizing ? 'ring-2 ring-blue-400' : ''} ${longPressActive ? 'ring-2 ring-purple-400' : ''} select-none overflow-hidden transition-all duration-200`}
       style={{
         left: position.x,
@@ -270,29 +249,26 @@ const MobileWidget: React.FC<MobileWidgetProps> = ({
         touchAction: 'none',
         transform: isDragging ? 'scale(1.05)' : isResizing ? 'scale(1.02)' : longPressActive ? 'scale(1.01)' : 'scale(1)',
         transition: (isDragging || isResizing) ? 'none' : 'transform 0.2s ease-out, box-shadow 0.2s ease-out',
-        borderColor: longPressActive ? '#8B5CF6' : accentColor,
-        boxShadow: longPressActive ? '0 0 20px rgba(139, 92, 246, 0.3)' : undefined
+        borderColor: longPressActive ? '#8B5CF6' : isDragEnabled ? '#10B981' : accentColor,
+        boxShadow: longPressActive ? '0 0 20px rgba(139, 92, 246, 0.3)' : isDragEnabled ? '0 0 20px rgba(16, 185, 129, 0.3)' : undefined
       }}
+      onMouseDown={handleWidgetInteraction}
+      onTouchStart={handleWidgetInteraction}
+      onMouseUp={longPress.handlers.onMouseUp}
+      onMouseLeave={longPress.handlers.onMouseLeave}
+      onTouchEnd={longPress.handlers.onTouchEnd}
     >
-      {/* Long press instruction overlay */}
-      {longPressActive && (
-        <div className="absolute inset-0 bg-purple-500/10 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10 pointer-events-none">
-          <div className="bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium">
-            Long press to drag
+      {/* Instruction overlay */}
+      {(longPressActive || isDragEnabled) && (
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-green-500/10 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10 pointer-events-none">
+          <div className={`${longPressActive ? 'bg-purple-600' : 'bg-green-600'} text-white px-3 py-1 rounded-full text-xs font-medium`}>
+            {longPressActive ? 'Keep holding...' : 'Drag enabled - Move me!'}
           </div>
         </div>
       )}
 
       {/* Widget Header */}
-      <div
-        className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-2 flex items-center justify-between active:cursor-grabbing"
-        onMouseDown={handleWidgetMouseDown}
-        onTouchStart={handleWidgetTouch}
-        onMouseUp={longPress.handlers.onMouseUp}
-        onMouseLeave={longPress.handlers.onMouseLeave}
-        onTouchEnd={longPress.handlers.onTouchEnd}
-        style={{ touchAction: 'none' }}
-      >
+      <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-2 flex items-center justify-between">
         <div className="flex items-center gap-1 flex-1 min-w-0">
           <span className="text-lg">{langIcon}</span>
           <div className="flex flex-col min-w-0">
