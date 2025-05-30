@@ -191,7 +191,7 @@ const Index = () => {
         y: Math.random() * (isMobile ? 100 : 150) + 80 
       },
       size: { 
-        width: isWidget && isMobile ? 180 : (isMobile ? Math.min(350, globalThis.window.innerWidth - 40) : 400), 
+        width: isWidget && isMobile ? 180 : (isMobile ? Math.min(350, globalThis.window?.innerWidth - 40) : 400), 
         height: isWidget && isMobile ? 160 : (isMobile ? 300 : 350)
       },
       zIndex: highestZIndex + 1
@@ -523,7 +523,10 @@ const Index = () => {
 
       {/* Enhanced FAB */}
       {isMobile && !editingWindow && (
-        <EnhancedFAB onCreateWindow={(lang) => addNewWindow(lang, true)} />
+        <EnhancedFAB onCreateWindow={(lang) => {
+          console.log(`FAB onCreateWindow called with: ${lang}`);
+          addNewWindow(lang, true);
+        }} />
       )}
 
       {/* Bottom Editor Panel */}
