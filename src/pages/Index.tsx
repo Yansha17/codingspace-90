@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -11,13 +12,14 @@ import Library from '@/components/Library';
 import Settings from '@/components/Settings';
 import MobileCodeEditor from '@/components/MobileCodeEditor';
 
+type ViewState = 'dashboard' | 'library' | 'settings';
+
 const Index = () => {
   const [windows, setWindows] = useState<CodeWindowType[]>([]);
   const [editingWindowId, setEditingWindowId] = useState<string | null>(null);
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
   const [showNavigationDrawer, setShowNavigationDrawer] = useState(false);
-  const [showLibrary, setShowLibrary] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [currentView, setCurrentView] = useState<ViewState>('dashboard');
   const isMobile = useIsMobile();
 
   // Check if user has seen welcome message before
@@ -131,18 +133,27 @@ const Index = () => {
     addNewWindow('javascript');
   }, [addNewWindow]);
 
-  const handleOpenLibrary = useCallback(() => {
+  const handleNavigateToDashboard = useCallback(() => {
+    setCurrentView('dashboard');
     setShowNavigationDrawer(false);
-    setShowLibrary(true);
+  }, []);
+
+  const handleOpenLibrary = useCallback(() => {
+    setCurrentView('library');
+    setShowNavigationDrawer(false);
   }, []);
 
   const handleOpenSettings = useCallback(() => {
+    setCurrentView('settings');
     setShowNavigationDrawer(false);
-    setShowSettings(true);
   }, []);
 
   const handleOpenNavigationDrawer = useCallback(() => {
     setShowNavigationDrawer(true);
+  }, []);
+
+  const handleClosePanels = useCallback(() => {
+    setCurrentView('dashboard');
   }, []);
 
   const saveToLibrary = useCallback((id: string) => {
@@ -175,6 +186,7 @@ const Index = () => {
       zIndex: windows.length + 1
     };
     setWindows(prevWindows => [...prevWindows, newWindow]);
+    setCurrentView('dashboard'); // Navigate back to dashboard after creating widget
   }, [windows.length]);
 
   // Get currently editing window
@@ -195,6 +207,7 @@ const Index = () => {
       <MobileNavigationDrawer
         isOpen={showNavigationDrawer}
         onClose={() => setShowNavigationDrawer(false)}
+        onNavigateToDashboard={handleNavigateToDashboard}
         onOpenLibrary={handleOpenLibrary}
         onOpenSettings={handleOpenSettings}
         widgetCount={windows.length}
@@ -202,56 +215,67 @@ const Index = () => {
         onClearAllWidgets={clearAllWidgets}
       />
 
-      {/* Library Component */}
-      {showLibrary && (
-        <Library
-          onClose={() => setShowLibrary(false)}
-          onCreateFromLibrary={handleCreateFromLibraryItem}
-        />
+      {/* Conditional Content Based on Current View */}
+      {currentView === 'dashboard' && (
+        <>
+          {/* Show welcome message on startup */}
+          {showWelcomeMessage && (
+            <StartupWelcomeMessage onDismiss={handleDismissWelcome} />
+          )}
+
+          {/* Main content area with top padding for navigation */}
+          <div className="pt-16">
+            {windows.map(window => (
+              <MobileWidget
+                key={window.id}
+                title={window.language}
+                langIcon=""
+                langName={window.language}
+                code={window.code}
+                position={window.position}
+                size={window.size}
+                zIndex={window.zIndex}
+                languageColor=""
+                isDragging={false}
+                onEdit={() => handleEditWindow(window.id)}
+                onDelete={() => deleteWindow(window.id)}
+                onDuplicate={() => duplicateWindow(window.id)}
+                onSaveToLibrary={() => saveToLibrary(window.id)}
+                onMouseDown={e => {
+                  e.stopPropagation();
+                  bringToFront(window.id);
+                }}
+                onTouchStart={e => {
+                  e.stopPropagation();
+                  bringToFront(window.id);
+                }}
+                onResize={newSize => updateWindow(window.id, { size: newSize })}
+              />
+            ))}
+          </div>
+
+          <EnhancedFAB onCreateWindow={addNewWindow} />
+        </>
       )}
 
-      {/* Settings Component */}
-      {showSettings && (
-        <Settings
-          onClose={() => setShowSettings(false)}
-        />
-      )}
-      
-      {/* Show welcome message on startup */}
-      {showWelcomeMessage && (
-        <StartupWelcomeMessage onDismiss={handleDismissWelcome} />
-      )}
-
-      {/* Main content area with top padding for navigation */}
-      <div className="pt-16">
-        {windows.map(window => (
-          <MobileWidget
-            key={window.id}
-            title={window.language}
-            langIcon=""
-            langName={window.language}
-            code={window.code}
-            position={window.position}
-            size={window.size}
-            zIndex={window.zIndex}
-            languageColor=""
-            isDragging={false}
-            onEdit={() => handleEditWindow(window.id)}
-            onDelete={() => deleteWindow(window.id)}
-            onDuplicate={() => duplicateWindow(window.id)}
-            onSaveToLibrary={() => saveToLibrary(window.id)}
-            onMouseDown={e => {
-              e.stopPropagation();
-              bringToFront(window.id);
-            }}
-            onTouchStart={e => {
-              e.stopPropagation();
-              bringToFront(window.id);
-            }}
-            onResize={newSize => updateWindow(window.id, { size: newSize })}
+      {/* Library View */}
+      {currentView === 'library' && (
+        <div className="fixed inset-0 z-40 bg-white pt-16">
+          <Library
+            onClose={handleClosePanels}
+            onCreateFromLibrary={handleCreateFromLibraryItem}
           />
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* Settings View */}
+      {currentView === 'settings' && (
+        <div className="fixed inset-0 z-40 bg-white pt-16">
+          <Settings
+            onClose={handleClosePanels}
+          />
+        </div>
+      )}
 
       {/* Mobile Code Editor - Bottom Sheet */}
       {editingWindow && (
@@ -264,8 +288,6 @@ const Index = () => {
           onChange={handleCodeChange}
         />
       )}
-
-      <EnhancedFAB onCreateWindow={addNewWindow} />
     </div>
   );
 };

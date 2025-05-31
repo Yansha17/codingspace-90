@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 interface MobileNavigationDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  onNavigateToDashboard: () => void;
   onOpenLibrary: () => void;
   onOpenSettings: () => void;
   widgetCount: number;
@@ -18,6 +19,7 @@ interface MobileNavigationDrawerProps {
 const MobileNavigationDrawer: React.FC<MobileNavigationDrawerProps> = ({
   isOpen,
   onClose,
+  onNavigateToDashboard,
   onOpenLibrary,
   onOpenSettings,
   widgetCount,
@@ -31,14 +33,15 @@ const MobileNavigationDrawer: React.FC<MobileNavigationDrawerProps> = ({
       items: [
         { label: `${widgetCount} Widgets Active`, action: () => {}, icon: Monitor },
         { label: 'New Widget', action: () => { onCreateWidget(); onClose(); }, icon: Code },
-        { label: 'Clear All', action: () => { onClearAllWidgets?.(); onClose(); }, icon: X, destructive: true }
+        { label: 'Clear All', action: () => { onClearAllWidgets?.(); onClose(); }, icon: X, destructive: true },
+        { label: 'Go to Dashboard', action: () => { onNavigateToDashboard(); onClose(); }, icon: Home }
       ]
     },
     {
       title: 'Library',
       icon: BookOpen,
       items: [
-        { label: 'Code Snippets', action: () => { onOpenLibrary(); onClose(); }, icon: FileText },
+        { label: 'Browse Code Snippets', action: () => { onOpenLibrary(); onClose(); }, icon: FileText },
         { label: 'Import Project', action: () => {}, icon: Upload },
         { label: 'Export Project', action: () => {}, icon: Download }
       ]
