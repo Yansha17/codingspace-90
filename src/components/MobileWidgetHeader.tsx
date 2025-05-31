@@ -69,27 +69,25 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
       </div>
       
       <div className="flex items-center gap-1">
-        {/* Preview Toggle - Show for previewable languages */}
-        {langConfig.previewable && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleTogglePreview}
-            onTouchStart={handleTogglePreview}
-            className={`h-6 w-6 p-0 rounded-md z-20 relative touch-manipulation transition-all duration-200 ${
-              showPreview 
-                ? 'bg-emerald-600 hover:bg-emerald-700' 
-                : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-            style={{ touchAction: 'manipulation' }}
-          >
-            {showPreview ? (
-              <Eye className="w-3 h-3 text-white" />
-            ) : (
-              <Code2 className="w-3 h-3 text-white" />
-            )}
-          </Button>
-        )}
+        {/* Always show preview toggle for better UX */}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={handleTogglePreview}
+          onTouchStart={handleTogglePreview}
+          className={`h-6 w-6 p-0 rounded-md z-20 relative touch-manipulation transition-all duration-200 ${
+            showPreview 
+              ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
+          style={{ touchAction: 'manipulation' }}
+        >
+          {showPreview ? (
+            <Eye className="w-3 h-3" />
+          ) : (
+            <Code2 className="w-3 h-3" />
+          )}
+        </Button>
         
         {/* Run Button - Show for runnable languages that aren't previewable */}
         {langConfig.runnable && !langConfig.previewable && (
@@ -98,10 +96,10 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
             variant="ghost"
             onClick={handleRun}
             onTouchStart={handleRun}
-            className="h-6 w-6 p-0 hover:bg-green-600 rounded-md z-20 relative touch-manipulation transition-all duration-200"
+            className="h-6 w-6 p-0 bg-green-600 hover:bg-green-700 text-white rounded-md z-20 relative touch-manipulation transition-all duration-200"
             style={{ touchAction: 'manipulation' }}
           >
-            <Play className="w-3 h-3 text-green-400 hover:text-white" />
+            <Play className="w-3 h-3" />
           </Button>
         )}
         
@@ -111,10 +109,10 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
           variant="ghost"
           onClick={handleEdit}
           onTouchStart={handleEdit}
-          className="h-6 w-6 p-0 hover:bg-blue-600 rounded-md z-20 relative touch-manipulation transition-all duration-200"
+          className="h-6 w-6 p-0 bg-blue-600 hover:bg-blue-700 text-white rounded-md z-20 relative touch-manipulation transition-all duration-200"
           style={{ touchAction: 'manipulation' }}
         >
-          <Edit3 className="w-3 h-3 text-blue-400 hover:text-white" />
+          <Edit3 className="w-3 h-3" />
         </Button>
         
         {/* Delete Button */}
@@ -123,9 +121,9 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
           variant="ghost"
           onClick={handleDelete}
           onTouchStart={handleDelete}
-          className="h-6 w-6 p-0 hover:bg-red-600 rounded-md z-20 relative touch-manipulation transition-all duration-200"
+          className="h-6 w-6 p-0 bg-red-600 hover:bg-red-700 text-white rounded-md z-20 relative touch-manipulation transition-all duration-200"
         >
-          <X className="w-3 h-3 text-red-400 hover:text-white" />
+          <X className="w-3 h-3" />
         </Button>
       </div>
     </div>

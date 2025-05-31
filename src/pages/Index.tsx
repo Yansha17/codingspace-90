@@ -6,6 +6,7 @@ import MobileWidget from '@/components/MobileWidget';
 import EnhancedFAB from '@/components/EnhancedFAB';
 import CanvasBackground from '@/components/CanvasBackground';
 import StartupWelcomeMessage from '@/components/StartupWelcomeMessage';
+import TopNavigation from '@/components/TopNavigation';
 
 const Index = () => {
   const [windows, setWindows] = useState<CodeWindowType[]>([]);
@@ -41,7 +42,7 @@ const Index = () => {
         title: language,
         language,
         code: '',
-        position: { x: 50, y: 50 },
+        position: { x: 50, y: 100 }, // Adjusted for top nav
         size: { width: 320, height: 240 },
         zIndex: prevWindows.length + 1
       };
@@ -87,40 +88,65 @@ const Index = () => {
     setEditingWindowId(null);
   }, []);
 
+  const handleCreateWidget = useCallback(() => {
+    // For now, create a JavaScript widget by default
+    addNewWindow('javascript');
+  }, [addNewWindow]);
+
+  const handleOpenLibrary = useCallback(() => {
+    console.log('Opening library...');
+    // TODO: Implement library functionality
+  }, []);
+
+  const handleOpenSettings = useCallback(() => {
+    console.log('Opening settings...');
+    // TODO: Implement settings functionality
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 overflow-hidden relative">
       <CanvasBackground />
+      
+      {/* Top Navigation */}
+      <TopNavigation 
+        onCreateWidget={handleCreateWidget}
+        onOpenLibrary={handleOpenLibrary}
+        onOpenSettings={handleOpenSettings}
+      />
       
       {/* Show welcome message on startup */}
       {showWelcomeMessage && (
         <StartupWelcomeMessage onDismiss={handleDismissWelcome} />
       )}
 
-      {windows.map(window => (
-        <MobileWidget
-          key={window.id}
-          title={window.language}
-          langIcon=""
-          langName={window.language}
-          code={window.code}
-          position={window.position}
-          size={window.size}
-          zIndex={window.zIndex}
-          languageColor=""
-          isDragging={false}
-          onEdit={() => handleEditWindow(window.id)}
-          onDelete={() => deleteWindow(window.id)}
-          onMouseDown={e => {
-            e.stopPropagation();
-            bringToFront(window.id);
-          }}
-          onTouchStart={e => {
-            e.stopPropagation();
-            bringToFront(window.id);
-          }}
-          onResize={newSize => updateWindow(window.id, { size: newSize })}
-        />
-      ))}
+      {/* Main content area with top padding for navigation */}
+      <div className="pt-16">
+        {windows.map(window => (
+          <MobileWidget
+            key={window.id}
+            title={window.language}
+            langIcon=""
+            langName={window.language}
+            code={window.code}
+            position={window.position}
+            size={window.size}
+            zIndex={window.zIndex}
+            languageColor=""
+            isDragging={false}
+            onEdit={() => handleEditWindow(window.id)}
+            onDelete={() => deleteWindow(window.id)}
+            onMouseDown={e => {
+              e.stopPropagation();
+              bringToFront(window.id);
+            }}
+            onTouchStart={e => {
+              e.stopPropagation();
+              bringToFront(window.id);
+            }}
+            onResize={newSize => updateWindow(window.id, { size: newSize })}
+          />
+        ))}
+      </div>
 
       <EnhancedFAB onCreateWindow={addNewWindow} />
     </div>
