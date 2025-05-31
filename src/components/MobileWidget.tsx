@@ -75,7 +75,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     delay: 300
   });
 
-  // Ultra-smooth drag system - single source of truth
+  // Ultra-smooth drag system with improved responsiveness
   const {
     elementRef,
     isDragging,
@@ -101,7 +101,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     setLocalCode(code);
   }, [code]);
 
-  // Update widget position via CSS transform for immediate feedback
+  // Update widget position via CSS for immediate feedback
   useEffect(() => {
     if (elementRef.current && !isDragging) {
       elementRef.current.style.left = `${position.x}px`;
@@ -121,27 +121,35 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     setLocalCode(newCode);
   }, []);
 
-  // Simplified header event handlers - only for draggable area
+  // Enhanced header interaction with proper drag area detection
   const handleHeaderInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    // Only allow dragging if the event comes from the draggable area
     const target = e.target as HTMLElement;
+    
+    // Check if the event comes from an interactive element
     const isInteractiveElement = target.closest('button') || 
                                 target.closest('[data-radix-switch-root]') || 
                                 target.closest('[role="switch"]') ||
-                                target.closest('.switch-container');
+                                target.closest('.switch-container') ||
+                                target.closest('[data-resize-handle]');
     
     if (isInteractiveElement) {
-      // Don't start drag for interactive elements
+      console.log('Header interaction blocked - interactive element');
       return;
     }
+
+    // Only start drag from the draggable header area
+    const isDraggableArea = target.closest('[data-widget-header]') || 
+                           target.classList.contains('draggable-area') ||
+                           !target.closest('button, [role="switch"], [data-radix-switch-root]');
     
-    console.log('Header interaction triggered');
-    e.preventDefault();
-    e.stopPropagation();
-    startDrag(e);
+    if (isDraggableArea) {
+      console.log('Starting drag from header');
+      startDrag(e);
+    }
   }, [startDrag]);
 
   const handleTogglePreview = useCallback(() => {
+    console.log('Toggle preview called');
     if (onTogglePreview) {
       onTogglePreview();
     } else {
@@ -207,14 +215,19 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
           touchAction: 'none',
           background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
           borderColor: isDragging ? '#10B981' : '#475569',
+          userSelect: 'none',
           ...dragStyles
         }}
       >
         <div 
           data-widget-header
+          className="draggable-area cursor-grab active:cursor-grabbing"
           onMouseDown={handleHeaderInteraction}
           onTouchStart={handleHeaderInteraction}
-          className="cursor-grab active:cursor-grabbing"
+          style={{ 
+            touchAction: 'none',
+            userSelect: 'none'
+          }}
         >
           <EnhancedMobileWidgetHeader
             title={title}
@@ -224,7 +237,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
             previewKey={currentPreviewKey}
             onEdit={handleEdit}
             onDelete={onDelete}
-            onTogglePreview={onTogglePreview}
+            onTogglePreview={handleTogglePreview}
             onMaximize={handleMaximize}
             onRun={handleRun}
             onDuplicate={onDuplicate}

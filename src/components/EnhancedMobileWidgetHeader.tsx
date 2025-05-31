@@ -57,17 +57,6 @@ const EnhancedMobileWidgetHeader: React.FC<EnhancedMobileWidgetHeaderProps> = me
     }
   }, [onTogglePreview]);
 
-  // Enhanced switch container event handling to prevent drag interference
-  const handleSwitchContainerEvent = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Force the switch to toggle when container is clicked/touched
-    if (onTogglePreview) {
-      onTogglePreview();
-    }
-  }, [onTogglePreview]);
-
   const handleRun = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -114,29 +103,50 @@ const EnhancedMobileWidgetHeader: React.FC<EnhancedMobileWidgetHeaderProps> = me
         </div>
       </div>
 
-      {/* Enhanced Code/Preview Switch - Completely isolated from drag events */}
+      {/* Completely Isolated Code/Preview Switch */}
       <div 
-        className="flex items-center gap-2 mx-2 relative z-50 cursor-pointer"
-        onClick={handleSwitchContainerEvent}
-        onTouchStart={handleSwitchContainerEvent}
-        onMouseDown={handleSwitchContainerEvent}
+        className="flex items-center gap-2 mx-2 relative z-50"
         style={{ 
           pointerEvents: 'auto',
-          touchAction: 'manipulation'
+          touchAction: 'manipulation',
+          isolation: 'isolate'
         }}
+        onTouchStart={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-1 pointer-events-none">
-          <Code2 className="w-3 h-3 text-slate-300" />
-          <Switch
-            checked={showPreview}
-            onCheckedChange={handleTogglePreview}
-            className="data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-blue-600 pointer-events-auto"
+        <div className="flex items-center gap-1">
+          <Code2 className="w-3 h-3 text-slate-300 pointer-events-none" />
+          <div 
+            className="relative z-[100]"
             style={{ 
+              touchAction: 'manipulation',
               pointerEvents: 'auto',
-              touchAction: 'manipulation'
+              isolation: 'isolate'
             }}
-          />
-          <Eye className="w-3 h-3 text-slate-300" />
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+          >
+            <Switch
+              checked={showPreview}
+              onCheckedChange={handleTogglePreview}
+              className="data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-blue-600"
+              style={{ 
+                pointerEvents: 'auto',
+                touchAction: 'manipulation',
+                isolation: 'isolate',
+                position: 'relative',
+                zIndex: 1000
+              }}
+            />
+          </div>
+          <Eye className="w-3 h-3 text-slate-300 pointer-events-none" />
         </div>
       </div>
       

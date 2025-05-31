@@ -76,13 +76,14 @@ export const triggerHapticFeedback = (type: 'light' | 'medium' | 'heavy' = 'ligh
 export const passiveEventOptions = { passive: true };
 export const nonPassiveEventOptions = { passive: false };
 
-// Ultra-fast transform optimization with immediate hardware acceleration
+// Ultra-fast transform optimization with immediate hardware acceleration and improved smoothness
 export const optimizeTransform = (element: HTMLElement, x: number, y: number, scale: number = 1) => {
-  // Use translate3d for hardware acceleration
-  element.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
+  // Use translate3d for hardware acceleration with subpixel precision
+  element.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scale(${scale.toFixed(3)})`;
   element.style.willChange = 'transform';
   element.style.backfaceVisibility = 'hidden';
   element.style.perspective = '1000px';
+  element.style.transformStyle = 'preserve-3d';
   // Force layer creation for better performance
   element.style.zIndex = element.style.zIndex || '0';
 };
