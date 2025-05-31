@@ -2,6 +2,7 @@
 import React, { memo, useCallback } from 'react';
 import { X, Edit3, Eye, Play, Code2, Copy, Maximize2, Save, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { getLanguageConfig } from '@/config/languages';
 import { triggerHapticFeedback } from '@/utils/performance';
 
@@ -49,11 +50,8 @@ const EnhancedMobileWidgetHeader: React.FC<EnhancedMobileWidgetHeaderProps> = me
     onDelete();
   }, [onDelete]);
 
-  const handleTogglePreview = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleTogglePreview = useCallback((checked: boolean) => {
     triggerHapticFeedback('light');
-    
     if (onTogglePreview) {
       onTogglePreview();
     }
@@ -104,28 +102,21 @@ const EnhancedMobileWidgetHeader: React.FC<EnhancedMobileWidgetHeaderProps> = me
           <span className="text-xs text-slate-400">{langName}</span>
         </div>
       </div>
+
+      {/* Code/Preview Switch */}
+      <div className="flex items-center gap-2 mx-2">
+        <div className="flex items-center gap-1">
+          <Code2 className="w-3 h-3 text-slate-300" />
+          <Switch
+            checked={showPreview}
+            onCheckedChange={handleTogglePreview}
+            className="data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-blue-600"
+          />
+          <Eye className="w-3 h-3 text-slate-300" />
+        </div>
+      </div>
       
       <div className="flex items-center gap-1">
-        {/* Primary Actions */}
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleTogglePreview}
-          onTouchStart={handleTogglePreview}
-          className={`h-6 w-6 p-0 rounded-md z-20 relative touch-manipulation transition-all duration-200 ${
-            showPreview 
-              ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-          style={{ touchAction: 'manipulation' }}
-        >
-          {showPreview ? (
-            <Eye className="w-3 h-3" />
-          ) : (
-            <Code2 className="w-3 h-3" />
-          )}
-        </Button>
-        
         {/* Run Button - Show for runnable languages that aren't previewable */}
         {langConfig.runnable && !langConfig.previewable && (
           <Button
@@ -140,40 +131,6 @@ const EnhancedMobileWidgetHeader: React.FC<EnhancedMobileWidgetHeaderProps> = me
           </Button>
         )}
 
-        {/* Secondary Actions */}
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleMaximize}
-          onTouchStart={handleMaximize}
-          className="h-6 w-6 p-0 bg-purple-600 hover:bg-purple-700 text-white rounded-md z-20 relative touch-manipulation transition-all duration-200"
-          style={{ touchAction: 'manipulation' }}
-        >
-          <Maximize2 className="w-3 h-3" />
-        </Button>
-
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleDuplicate}
-          onTouchStart={handleDuplicate}
-          className="h-6 w-6 p-0 bg-orange-600 hover:bg-orange-700 text-white rounded-md z-20 relative touch-manipulation transition-all duration-200"
-          style={{ touchAction: 'manipulation' }}
-        >
-          <Copy className="w-3 h-3" />
-        </Button>
-
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleSaveToLibrary}
-          onTouchStart={handleSaveToLibrary}
-          className="h-6 w-6 p-0 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md z-20 relative touch-manipulation transition-all duration-200"
-          style={{ touchAction: 'manipulation' }}
-        >
-          <Save className="w-3 h-3" />
-        </Button>
-        
         {/* Edit Button */}
         <Button
           size="sm"

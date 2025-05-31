@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
@@ -9,6 +8,8 @@ import MobileWidget from './MobileWidget';
 import WindowResizeHandle from './WindowResizeHandle';
 import { getLanguageConfig } from '@/config/languages';
 import { useStandardWidget, StandardWidgetActions } from '@/hooks/useStandardWidget';
+import FuturisticBottomEditor from './FuturisticBottomEditor';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 interface CodeWindowProps {
   window: CodeWindowType;
@@ -27,8 +28,18 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
 }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [bottomEditorOpen, setBottomEditorOpen] = useState(false);
+  const [localCode, setLocalCode] = useState(codeWindow.code);
 
   const langConfig = getLanguageConfig(codeWindow.language);
+
+  // Auto-save functionality
+  useAutoSave({
+    value: localCode,
+    onSave: (newCode) => {
+      onUpdate(codeWindow.id, { code: newCode });
+    },
+    delay: 300
+  });
 
   // Check mobile status
   useEffect(() => {
@@ -39,6 +50,11 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     globalThis.window.addEventListener('resize', checkMobile);
     return () => globalThis.window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Sync local code with window code
+  useEffect(() => {
+    setLocalCode(codeWindow.code);
+  }, [codeWindow.code]);
 
   // Standard widget actions
   const actions: StandardWidgetActions = {
@@ -87,6 +103,10 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     onBringToFront(codeWindow.id);
   }, [codeWindow.id, onBringToFront]);
 
+  const handleCodeChange = useCallback((newCode: string) => {
+    setLocalCode(newCode);
+  }, []);
+
   const handleEditClick = useCallback(() => {
     setBottomEditorOpen(true);
   }, []);
@@ -103,7 +123,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
           title={codeWindow.title}
           langIcon={langConfig.name}
           langName={langConfig.name}
-          code={codeWindow.code}
+          code={localCode}
           position={codeWindow.position}
           size={codeWindow.size}
           zIndex={codeWindow.zIndex}
@@ -122,12 +142,12 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
           onCodeChange={handleCodeChange}
         />
 
-        <BottomEditor
+        <FuturisticBottomEditor
           isOpen={bottomEditorOpen}
           onClose={handleCloseBottomEditor}
           title={codeWindow.title}
           language={codeWindow.language}
-          code={codeWindow.code}
+          code={localCode}
           onChange={handleCodeChange}
           onRun={handleRunCode}
         />
@@ -173,7 +193,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
         <div className={`flex-1 ${showPreview ? 'h-1/2' : 'h-full'}`}>
           <CodeEditor
             language={codeWindow.language}
-            code={codeWindow.code}
+            code={localCode}
             onChange={handleCodeChange}
           />
         </div>
@@ -183,7 +203,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
             <CodePreview
               key={previewKey}
               language={codeWindow.language}
-              code={codeWindow.code}
+              code={localCode}
             />
           </div>
         )}
@@ -196,6 +216,17 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
           onTouchStart={handleResizeStart}
         />
       )}
+
+      {/* Futuristic Bottom Editor for desktop mode */}
+      <FuturisticBottomEditor
+        isOpen={bottomEditorOpen}
+        onClose={handleCloseBottomEditor}
+        title={codeWindow.title}
+        language={codeWindow.language}
+        code={localCode}
+        onChange={handleCodeChange}
+        onRun={handleRunCode}
+      />
     </div>
   );
 });

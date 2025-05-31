@@ -3,9 +3,10 @@ import FloatingWidgetEditor from './FloatingWidgetEditor';
 import EnhancedMobileWidgetHeader from './EnhancedMobileWidgetHeader';
 import MobileWidgetContent from './MobileWidgetContent';
 import EnhancedMobileResizeHandle from './EnhancedMobileResizeHandle';
-import BottomEditor from './BottomEditor';
+import FuturisticBottomEditor from './FuturisticBottomEditor';
 import { getLanguageConfig } from '@/config/languages';
 import { useUltraSmoothDrag } from '@/hooks/useUltraSmoothDrag';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 interface MobileWidgetProps {
   title: string;
@@ -59,8 +60,20 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   const [previousSize, setPreviousSize] = useState({ width: 0, height: 0 });
   const [previousPosition, setPreviousPosition] = useState({ x: 0, y: 0 });
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [localCode, setLocalCode] = useState(code);
 
   const langConfig = getLanguageConfig(title);
+
+  // Auto-save functionality
+  useAutoSave({
+    value: localCode,
+    onSave: (newCode) => {
+      if (onCodeChange) {
+        onCodeChange(newCode);
+      }
+    },
+    delay: 300
+  });
 
   // Ultra-smooth drag system - single source of truth
   const {
@@ -84,6 +97,10 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     setLocalPreviewKey(previewKey);
   }, [previewKey]);
 
+  useEffect(() => {
+    setLocalCode(code);
+  }, [code]);
+
   // Update widget position via CSS transform for immediate feedback
   useEffect(() => {
     if (elementRef.current && !isDragging) {
@@ -101,10 +118,8 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   }, []);
 
   const handleCodeChange = useCallback((newCode: string) => {
-    if (onCodeChange) {
-      onCodeChange(newCode);
-    }
-  }, [onCodeChange]);
+    setLocalCode(newCode);
+  }, []);
 
   // Simplified header event handlers - no conflicts
   const handleHeaderInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -208,7 +223,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
         <MobileWidgetContent
           title={title}
           langName={langName}
-          code={code}
+          code={localCode}
           size={size}
           showPreview={currentShowPreview}
           previewKey={currentPreviewKey}
@@ -221,13 +236,13 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
         />
       </div>
 
-      {/* Bottom Editor - unified popup at bottom of screen */}
-      <BottomEditor
+      {/* Futuristic Bottom Editor */}
+      <FuturisticBottomEditor
         isOpen={isEditorOpen}
         onClose={handleCloseEditor}
         title={title}
         language={langName}
-        code={code}
+        code={localCode}
         onChange={handleCodeChange}
         onRun={handleRun}
       />
