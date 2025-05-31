@@ -37,15 +37,14 @@ export const useUltraSmoothDrag = ({
     
     const rect = elementRef.current?.getBoundingClientRect();
     if (rect) {
-      // Calculate offset from touch/click point to element center for better feel
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      
+      // Calculate offset from touch/click point to element's top-left corner
+      // This prevents jumping and maintains exact finger-to-element relationship
       setDragOffset({
-        x: clientX - centerX,
-        y: clientY - centerY
+        x: clientX - rect.left,
+        y: clientY - rect.top
       });
       
+      // Store the current position for reference
       currentPositionRef.current = { x: rect.left, y: rect.top };
     }
     
@@ -59,9 +58,9 @@ export const useUltraSmoothDrag = ({
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     
-    // Calculate position with element centered on finger/cursor
-    let newX = clientX - dragOffset.x - elementWidth / 2;
-    let newY = clientY - dragOffset.y - elementHeight / 2;
+    // Calculate new position maintaining exact offset from touch point
+    let newX = clientX - dragOffset.x;
+    let newY = clientY - dragOffset.y;
     
     // Constrain to screen bounds if enabled
     if (constrainToScreen) {
@@ -76,7 +75,7 @@ export const useUltraSmoothDrag = ({
       optimizeTransform(elementRef.current, newX, newY, 1.02);
     }
     
-    // Update parent component immediately
+    // Update parent component with exact position
     onPositionChange({ x: Math.round(newX), y: Math.round(newY) });
   }, [isDragging, dragOffset, constrainToScreen, elementWidth, elementHeight, onPositionChange]);
 
@@ -92,14 +91,17 @@ export const useUltraSmoothDrag = ({
     }
   }, [onDragEnd]);
 
-  // Global event listeners with immediate response
+  // Optimized event listeners with proper passive handling
   useEffect(() => {
     if (isDragging) {
-      const options = { passive: false };
-      document.addEventListener('mousemove', updateDrag);
-      document.addEventListener('mouseup', endDrag);
-      document.addEventListener('touchmove', updateDrag, options);
-      document.addEventListener('touchend', endDrag);
+      // Use non-passive for touchmove to allow preventDefault
+      const touchOptions = { passive: false };
+      const mouseOptions = { passive: true };
+      
+      document.addEventListener('mousemove', updateDrag, mouseOptions);
+      document.addEventListener('mouseup', endDrag, mouseOptions);
+      document.addEventListener('touchmove', updateDrag, touchOptions);
+      document.addEventListener('touchend', endDrag, mouseOptions);
       
       return () => {
         document.removeEventListener('mousemove', updateDrag);

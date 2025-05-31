@@ -3,13 +3,12 @@ import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
 import CodePreview from './CodePreview';
-import MobileCodeEditor from './MobileCodeEditor';
+import BottomEditor from './BottomEditor';
 import WindowHeader from './WindowHeader';
 import MobileWidget from './MobileWidget';
 import WindowResizeHandle from './WindowResizeHandle';
 import { getLanguageConfig } from '@/config/languages';
 import { useStandardWidget, StandardWidgetActions } from '@/hooks/useStandardWidget';
-import { useDebouncedCallback } from '@/utils/performance';
 
 interface CodeWindowProps {
   window: CodeWindowType;
@@ -27,7 +26,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
   onEdit
 }) => {
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileEditorOpen, setMobileEditorOpen] = useState(false);
+  const [bottomEditorOpen, setBottomEditorOpen] = useState(false);
 
   const langConfig = getLanguageConfig(codeWindow.language);
 
@@ -46,18 +45,16 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     onUpdate,
     onBringToFront,
     onDelete,
-    onEdit: onEdit || (() => setMobileEditorOpen(true))
+    onEdit: onEdit || (() => setBottomEditorOpen(true))
   };
 
   // Use the standardized widget hook
   const {
-    isDragging,
     isResizing,
     isMaximized,
     showPreview,
     previewKey,
     elementRef,
-    handleDragStart,
     handleResizeStart,
     toggleMaximize,
     togglePreview,
@@ -90,6 +87,14 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     onBringToFront(codeWindow.id);
   }, [codeWindow.id, onBringToFront]);
 
+  const handleEditClick = useCallback(() => {
+    setBottomEditorOpen(true);
+  }, []);
+
+  const handleCloseBottomEditor = useCallback(() => {
+    setBottomEditorOpen(false);
+  }, []);
+
   // Mobile widget mode - smaller, simplified interface
   if (isMobile && codeWindow.size.width < 300) {
     return (
@@ -103,27 +108,28 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
           size={codeWindow.size}
           zIndex={codeWindow.zIndex}
           languageColor={langConfig.borderColor}
-          isDragging={isDragging}
+          isDragging={false}
           showPreview={showPreview}
           previewKey={previewKey}
-          onEdit={handleEdit}
+          onEdit={handleEditClick}
           onDelete={handleDelete}
           onTogglePreview={togglePreview}
-          onMouseDown={handleDragStart}
-          onTouchStart={handleDragStart}
+          onMouseDown={() => {}}
+          onTouchStart={() => {}}
           onResize={handleWidgetResize}
           onPositionChange={handleWidgetPositionChange}
           onBringToFront={handleWidgetBringToFront}
           onCodeChange={handleCodeChange}
         />
 
-        <MobileCodeEditor
-          isOpen={mobileEditorOpen}
-          onClose={() => setMobileEditorOpen(false)}
+        <BottomEditor
+          isOpen={bottomEditorOpen}
+          onClose={handleCloseBottomEditor}
           title={codeWindow.title}
           language={codeWindow.language}
           code={codeWindow.code}
           onChange={handleCodeChange}
+          onRun={handleRunCode}
         />
       </>
     );
@@ -155,11 +161,11 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
         onRun={handleRunCode}
         onTogglePreview={togglePreview}
         onDelete={handleDelete}
-        onEdit={handleEdit}
+        onEdit={handleEditClick}
         onMaximize={toggleMaximize}
         isMaximized={isMaximized}
-        onMouseDown={handleDragStart}
-        onTouchStart={handleDragStart}
+        onMouseDown={() => {}}
+        onTouchStart={() => {}}
       />
 
       {/* Content */}

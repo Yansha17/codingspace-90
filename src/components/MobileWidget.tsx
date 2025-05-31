@@ -3,6 +3,7 @@ import FloatingWidgetEditor from './FloatingWidgetEditor';
 import EnhancedMobileWidgetHeader from './EnhancedMobileWidgetHeader';
 import MobileWidgetContent from './MobileWidgetContent';
 import EnhancedMobileResizeHandle from './EnhancedMobileResizeHandle';
+import BottomEditor from './BottomEditor';
 import { getLanguageConfig } from '@/config/languages';
 import { useUltraSmoothDrag } from '@/hooks/useUltraSmoothDrag';
 
@@ -61,7 +62,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
 
   const langConfig = getLanguageConfig(title);
 
-  // Ultra-smooth drag system
+  // Ultra-smooth drag system - single source of truth
   const {
     elementRef,
     isDragging,
@@ -105,15 +106,9 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     }
   }, [onCodeChange]);
 
-  const handleHeaderMouseDown = useCallback((e: React.MouseEvent) => {
-    console.log('Header mouse down triggered');
-    e.preventDefault();
-    e.stopPropagation();
-    startDrag(e);
-  }, [startDrag]);
-
-  const handleHeaderTouchStart = useCallback((e: React.TouchEvent) => {
-    console.log('Header touch start triggered');
+  // Simplified header event handlers - no conflicts
+  const handleHeaderInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    console.log('Header interaction triggered');
     e.preventDefault();
     e.stopPropagation();
     startDrag(e);
@@ -190,8 +185,8 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
       >
         <div 
           data-widget-header
-          onMouseDown={handleHeaderMouseDown}
-          onTouchStart={handleHeaderTouchStart}
+          onMouseDown={handleHeaderInteraction}
+          onTouchStart={handleHeaderInteraction}
           className="cursor-grab active:cursor-grabbing"
         >
           <EnhancedMobileWidgetHeader
@@ -202,7 +197,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
             previewKey={currentPreviewKey}
             onEdit={handleEdit}
             onDelete={onDelete}
-            onTogglePreview={handleTogglePreview}
+            onTogglePreview={onTogglePreview}
             onMaximize={handleMaximize}
             onRun={handleRun}
             onDuplicate={onDuplicate}
@@ -226,14 +221,14 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
         />
       </div>
 
-      <FloatingWidgetEditor
+      {/* Bottom Editor - unified popup at bottom of screen */}
+      <BottomEditor
         isOpen={isEditorOpen}
         onClose={handleCloseEditor}
         title={title}
         language={langName}
         code={code}
         onChange={handleCodeChange}
-        onDelete={onDelete}
         onRun={handleRun}
       />
     </>

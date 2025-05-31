@@ -1,10 +1,10 @@
+
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import { 
   useOptimizedDragHandler, 
   useDebouncedCallback, 
-  triggerHapticFeedback,
-  optimizeTransform 
+  triggerHapticFeedback
 } from '@/utils/performance';
 
 export interface StandardWidgetActions {
@@ -22,12 +22,10 @@ export interface UseStandardWidgetProps {
 
 export const useStandardWidget = ({ window, actions, isMobile = false }: UseStandardWidgetProps) => {
   // State management
-  const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [previousSize, setPreviousSize] = useState({ width: 0, height: 0 });
   const [previousPosition, setPreviousPosition] = useState({ x: 0, y: 0 });
   
@@ -41,35 +39,11 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
       windowIdRef.current = window.id;
       setIsMaximized(false);
       setShowPreview(false);
-      setIsDragging(false);
       setIsResizing(false);
     }
   }, [window.id]);
 
-  // Enhanced drag start with proper offset calculation
-  const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
-    actions.onBringToFront(window.id);
-    triggerHapticFeedback('light');
-    
-    setIsDragging(true);
-    
-    // Calculate offset from click point within the element
-    const rect = elementRef.current?.getBoundingClientRect();
-    if (rect) {
-      setDragOffset({
-        x: clientX - rect.left,
-        y: clientY - rect.top
-      });
-    }
-  }, [window.id, actions.onBringToFront]);
-
-  // Enhanced resize start
+  // Enhanced resize start - only handles resizing, no dragging
   const handleResizeStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -77,35 +51,6 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
     setIsResizing(true);
     triggerHapticFeedback('medium');
   }, []);
-
-  // Ultra-optimized drag handler with proper offset maintenance
-  const handleDragMove = useOptimizedDragHandler((e: MouseEvent | TouchEvent) => {
-    if (!isDragging) return;
-    
-    e.preventDefault();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
-    // Calculate new position maintaining the drag offset
-    const newX = Math.max(0, Math.min(
-      globalThis.window.innerWidth - 120, 
-      clientX - dragOffset.x
-    ));
-    const newY = Math.max(60, Math.min(
-      globalThis.window.innerHeight - 120, 
-      clientY - dragOffset.y
-    ));
-    
-    // Immediate visual feedback with hardware acceleration
-    if (elementRef.current) {
-      optimizeTransform(elementRef.current, newX, newY);
-    }
-    
-    // Update state immediately for smooth feedback
-    actions.onUpdate(window.id, {
-      position: { x: newX, y: newY }
-    });
-  }, [isDragging, dragOffset, window.id, actions.onUpdate]);
 
   // Ultra-optimized resize handler
   const handleResizeMove = useOptimizedDragHandler((e: MouseEvent | TouchEvent) => {
@@ -134,9 +79,8 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
     });
   }, [isResizing, window.id, actions.onUpdate, isMobile, isMaximized]);
 
-  // End drag/resize
-  const handleEnd = useCallback(() => {
-    setIsDragging(false);
+  // End resize
+  const handleResizeEnd = useCallback(() => {
     setIsResizing(false);
     
     // Reset will-change for performance
@@ -145,23 +89,23 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
     }
   }, []);
 
-  // Global event listeners with passive optimization
+  // Global event listeners for resize only
   useEffect(() => {
-    if (isDragging || isResizing) {
+    if (isResizing) {
       const options = { passive: false };
-      document.addEventListener('mousemove', handleDragMove);
-      document.addEventListener('mouseup', handleEnd, { passive: true });
-      document.addEventListener('touchmove', handleDragMove, options);
-      document.addEventListener('touchend', handleEnd, { passive: true });
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd, { passive: true });
+      document.addEventListener('touchmove', handleResizeMove, options);
+      document.addEventListener('touchend', handleResizeEnd, { passive: true });
       
       return () => {
-        document.removeEventListener('mousemove', handleDragMove);
-        document.removeEventListener('mouseup', handleEnd);
-        document.removeEventListener('touchmove', handleDragMove);
-        document.removeEventListener('touchend', handleEnd);
+        document.removeEventListener('mousemove', handleResizeMove);
+        document.removeEventListener('mouseup', handleResizeEnd);
+        document.removeEventListener('touchmove', handleResizeMove);
+        document.removeEventListener('touchend', handleResizeEnd);
       };
     }
-  }, [isDragging, isResizing, handleDragMove, handleEnd]);
+  }, [isResizing, handleResizeMove, handleResizeEnd]);
 
   // Standard widget actions with smoother feedback
   const toggleMaximize = useCallback(() => {
@@ -213,7 +157,7 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
 
   return {
     // State
-    isDragging,
+    isDragging: false, // Dragging is now handled by useUltraSmoothDrag
     isResizing,
     isMaximized,
     showPreview,
@@ -222,8 +166,8 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
     // Refs
     elementRef,
     
-    // Handlers
-    handleDragStart,
+    // Handlers - removed drag handlers
+    handleDragStart: () => {}, // Placeholder - actual dragging handled by useUltraSmoothDrag
     handleResizeStart,
     toggleMaximize,
     togglePreview,
@@ -231,16 +175,12 @@ export const useStandardWidget = ({ window, actions, isMobile = false }: UseStan
     handleDelete,
     handleCodeChange,
     
-    // Computed styles with smooth hardware acceleration
+    // Computed styles - simplified since no dragging here
     dragStyles: {
-      cursor: isDragging ? 'grabbing' : 'grab',
-      transform: isDragging ? 'scale(1.01)' : 'scale(1)',
-      boxShadow: isDragging 
-        ? '0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.2)' 
-        : '0 15px 20px -5px rgba(0, 0, 0, 0.25)',
-      zIndex: isDragging ? 9999 : window.zIndex,
-      transition: isDragging ? 'none' : 'all 0.1s ease-out',
-      willChange: isDragging || isResizing ? 'transform' : 'auto',
+      boxShadow: '0 15px 20px -5px rgba(0, 0, 0, 0.25)',
+      zIndex: window.zIndex,
+      transition: 'all 0.1s ease-out',
+      willChange: isResizing ? 'width, height' : 'auto',
       backfaceVisibility: 'hidden' as const,
       perspective: '1000px'
     }
