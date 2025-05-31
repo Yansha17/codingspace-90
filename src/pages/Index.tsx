@@ -2,6 +2,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getLanguageConfig } from '@/config/languages';
 import MobileWidget from '@/components/MobileWidget';
 import EnhancedFAB from '@/components/EnhancedFAB';
 import CanvasBackground from '@/components/CanvasBackground';
