@@ -1,9 +1,7 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
-import { initialWindows } from '@/config/initial-windows';
-import { useMobile } from '@/hooks/useMobile';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import CodeEditorDrawer from '@/components/CodeEditorDrawer';
+import { useMobile } from '@/hooks/use-mobile';
 import MobileWidget from '@/components/MobileWidget';
 import EnhancedFAB from '@/components/EnhancedFAB';
 import CanvasBackground from '@/components/CanvasBackground';
@@ -42,6 +40,7 @@ const Index = () => {
     setWindows(prevWindows => {
       const newWindow: CodeWindowType = {
         id: `window-${Date.now()}`,
+        title: language,
         language,
         code: '',
         position: { x: 50, y: 50 },
@@ -95,12 +94,7 @@ const Index = () => {
       <CanvasBackground />
       
       {/* Show welcome message on startup */}
-      {showWelcomeMessage && !isMobile && (
-        <StartupWelcomeMessage onDismiss={handleDismissWelcome} />
-      )}
-      
-      {/* Mobile optimized message */}
-      {showWelcomeMessage && isMobile && (
+      {showWelcomeMessage && (
         <StartupWelcomeMessage onDismiss={handleDismissWelcome} />
       )}
 
@@ -131,14 +125,6 @@ const Index = () => {
       ))}
 
       <EnhancedFAB onCreateWindow={addNewWindow} />
-
-      <CodeEditorDrawer
-        isOpen={editingWindowId !== null}
-        onClose={handleCloseEditor}
-        windowId={editingWindowId}
-        windows={windows}
-        onUpdateWindow={updateWindow}
-      />
     </div>
   );
 };
