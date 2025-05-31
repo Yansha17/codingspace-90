@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -5,8 +6,6 @@ import MobileWidget from '@/components/MobileWidget';
 import EnhancedFAB from '@/components/EnhancedFAB';
 import CanvasBackground from '@/components/CanvasBackground';
 import StartupWelcomeMessage from '@/components/StartupWelcomeMessage';
-
-interface IndexProps {}
 
 const Index = () => {
   const [windows, setWindows] = useState<CodeWindowType[]>([]);
