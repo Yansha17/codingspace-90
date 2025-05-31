@@ -11,10 +11,11 @@ import MobileNavigationDrawer from '@/components/MobileNavigationDrawer';
 import Library from '@/components/Library';
 import Settings from '@/components/Settings';
 import MobileCodeEditor from '@/components/MobileCodeEditor';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 type ViewState = 'dashboard' | 'library' | 'settings';
 
-const Index = () => {
+const IndexContent = () => {
   const [windows, setWindows] = useState<CodeWindowType[]>([]);
   const [editingWindowId, setEditingWindowId] = useState<string | null>(null);
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
@@ -193,7 +194,7 @@ const Index = () => {
   const editingWindow = editingWindowId ? windows.find(w => w.id === editingWindowId) : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 overflow-hidden relative">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 dark:from-slate-950 dark:via-gray-950 dark:to-slate-900 overflow-hidden relative">
       <CanvasBackground />
       
       {/* Top Navigation */}
@@ -260,7 +261,7 @@ const Index = () => {
 
       {/* Library View */}
       {currentView === 'library' && (
-        <div className="fixed inset-0 z-40 bg-white pt-16">
+        <div className="fixed inset-0 z-40 bg-background pt-16">
           <Library
             onClose={handleClosePanels}
             onCreateFromLibrary={handleCreateFromLibraryItem}
@@ -270,7 +271,7 @@ const Index = () => {
 
       {/* Settings View */}
       {currentView === 'settings' && (
-        <div className="fixed inset-0 z-40 bg-white pt-16">
+        <div className="fixed inset-0 z-40 bg-background pt-16">
           <Settings
             onClose={handleClosePanels}
           />
@@ -289,6 +290,14 @@ const Index = () => {
         />
       )}
     </div>
+  );
+};
+
+const Index = () => {
+  return (
+    <ThemeProvider>
+      <IndexContent />
+    </ThemeProvider>
   );
 };
 

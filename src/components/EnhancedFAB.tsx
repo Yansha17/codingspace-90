@@ -55,7 +55,10 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = memo(({ onCreateWindow }) => {
 
   console.log('FAB: Rendering, isExpanded:', isExpanded);
 
-  const languageEntries = Object.entries(LANGUAGE_CONFIG);
+  // Sort languages alphabetically by name
+  const languageEntries = Object.entries(LANGUAGE_CONFIG).sort(([, a], [, b]) => 
+    a.name.localeCompare(b.name)
+  );
 
   return (
     <div style={{

@@ -2,6 +2,7 @@
 import React from 'react';
 import { Menu, Settings, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface TopNavigationProps {
   onCreateWidget: () => void;
@@ -52,6 +53,8 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
 
         {/* Right side - Actions */}
         <div className="flex items-center gap-2">
+          <ThemeToggle />
+          
           <Button
             size="sm"
             variant="ghost"

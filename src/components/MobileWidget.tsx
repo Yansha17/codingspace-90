@@ -80,7 +80,14 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
 
   const handleWidgetMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('[data-resize-handle]')) {
+    
+    // Check if the click is on the header area for dragging
+    const headerElement = target.closest('[data-widget-header]');
+    const isButton = target.closest('button');
+    const isResizeHandle = target.closest('[data-resize-handle]');
+    
+    // Only allow dragging from the header area and not from buttons or resize handle
+    if (!headerElement || isButton || isResizeHandle) {
       return;
     }
     
@@ -91,7 +98,14 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
 
   const handleWidgetTouchStart = useCallback((e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('[data-resize-handle]')) {
+    
+    // Check if the touch is on the header area for dragging
+    const headerElement = target.closest('[data-widget-header]');
+    const isButton = target.closest('button');
+    const isResizeHandle = target.closest('[data-resize-handle]');
+    
+    // Only allow dragging from the header area and not from buttons or resize handle
+    if (!headerElement || isButton || isResizeHandle) {
       return;
     }
 
@@ -146,25 +160,6 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   const currentShowPreview = onTogglePreview ? showPreview : localShowPreview;
   const currentPreviewKey = previewKey || localPreviewKey;
 
-  // Optimized styles for better performance
-  const widgetStyles = {
-    left: position.x,
-    top: position.y,
-    width: Math.max(140, size.width),
-    height: Math.max(120, size.height),
-    zIndex: isDragging ? 9999 : zIndex,
-    touchAction: 'none' as const,
-    background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-    borderColor: isDragging ? '#10B981' : '#475569',
-    boxShadow: isDragging 
-      ? '0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.2)' 
-      : '0 15px 20px -5px rgba(0, 0, 0, 0.25)',
-    transition: isDragging ? 'none' : 'box-shadow 0.1s ease-out, border-color 0.1s ease-out',
-    backfaceVisibility: 'hidden' as const,
-    perspective: '1000px',
-    willChange: isDragging ? 'transform' : 'auto'
-  };
-
   return (
     <div
       ref={widgetRef}
@@ -191,20 +186,22 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
       onMouseDown={handleWidgetMouseDown}
       onTouchStart={handleWidgetTouchStart}
     >
-      <EnhancedMobileWidgetHeader
-        title={title}
-        langName={langName}
-        isMaximized={isMaximized}
-        showPreview={currentShowPreview}
-        previewKey={currentPreviewKey}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onTogglePreview={handleTogglePreview}
-        onMaximize={handleMaximize}
-        onRun={handleRun}
-        onDuplicate={onDuplicate}
-        onSaveToLibrary={onSaveToLibrary}
-      />
+      <div data-widget-header>
+        <EnhancedMobileWidgetHeader
+          title={title}
+          langName={langName}
+          isMaximized={isMaximized}
+          showPreview={currentShowPreview}
+          previewKey={currentPreviewKey}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onTogglePreview={handleTogglePreview}
+          onMaximize={handleMaximize}
+          onRun={handleRun}
+          onDuplicate={onDuplicate}
+          onSaveToLibrary={onSaveToLibrary}
+        />
+      </div>
 
       <MobileWidgetContent
         title={title}

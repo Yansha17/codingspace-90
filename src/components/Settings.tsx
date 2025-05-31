@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Save, Monitor, Moon, Sun, Smartphone, Globe, Palette } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface SettingsProps {
   onClose?: () => void;
@@ -9,18 +10,19 @@ interface SettingsProps {
 
 const Settings: React.FC<SettingsProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState('general');
+  const { theme, setTheme } = useTheme();
   
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-background text-foreground">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
+      <div className="p-4 border-b border-border flex items-center justify-between bg-background">
+        <h2 className="text-2xl font-bold text-foreground">Settings</h2>
         {onClose && (
           <Button
             onClick={onClose}
             variant="ghost"
             size="sm"
-            className="p-2 hover:bg-gray-100"
+            className="p-2 hover:bg-accent"
           >
             <X className="w-5 h-5" />
           </Button>
@@ -29,7 +31,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
       
       {/* Settings Content */}
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-56 border-r border-gray-200 p-4">
+        <div className="w-56 border-r border-border p-4 bg-muted/30">
           <nav className="space-y-1">
             <Button 
               variant={activeTab === 'general' ? 'default' : 'ghost'}
@@ -57,8 +59,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
             </Button>
           </nav>
         </div>
-        <div className="flex-1 p-6 overflow-y-auto">
-          <h3 className="text-lg font-medium mb-4">
+        <div className="flex-1 p-6 overflow-y-auto bg-background">
+          <h3 className="text-lg font-medium mb-4 text-foreground">
             {activeTab === 'general' && 'General Settings'}
             {activeTab === 'appearance' && 'Appearance Settings'}
             {activeTab === 'editor' && 'Editor Settings'}
@@ -68,17 +70,17 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           {activeTab === 'general' && (
             <div className="space-y-6">
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">App Name</label>
+                <label className="text-sm font-medium text-foreground">App Name</label>
                 <input
                   type="text"
-                  className="px-3 py-2 border border-gray-300 rounded-md"
+                  className="px-3 py-2 border border-border rounded-md bg-background text-foreground"
                   defaultValue="Code Studio"
                 />
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">Default Language</label>
-                <select className="px-3 py-2 border border-gray-300 rounded-md">
+                <label className="text-sm font-medium text-foreground">Default Language</label>
+                <select className="px-3 py-2 border border-border rounded-md bg-background text-foreground">
                   <option>JavaScript</option>
                   <option>HTML</option>
                   <option>CSS</option>
@@ -91,17 +93,28 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           {activeTab === 'appearance' && (
             <div className="space-y-6">
               <div className="flex flex-col gap-4">
-                <label className="text-sm font-medium">Theme</label>
+                <label className="text-sm font-medium text-foreground">Theme</label>
                 <div className="flex gap-2">
-                  <Button className="flex flex-col gap-2 h-auto p-4 bg-white border border-gray-300 hover:bg-gray-50 text-gray-900">
+                  <Button 
+                    onClick={() => setTheme('light')}
+                    variant={theme === 'light' ? 'default' : 'outline'}
+                    className="flex flex-col gap-2 h-auto p-4"
+                  >
                     <Sun className="w-5 h-5" />
                     <span>Light</span>
                   </Button>
-                  <Button className="flex flex-col gap-2 h-auto p-4 bg-gray-900 text-white hover:bg-gray-800">
+                  <Button 
+                    onClick={() => setTheme('dark')}
+                    variant={theme === 'dark' ? 'default' : 'outline'}
+                    className="flex flex-col gap-2 h-auto p-4"
+                  >
                     <Moon className="w-5 h-5" />
                     <span>Dark</span>
                   </Button>
-                  <Button className="flex flex-col gap-2 h-auto p-4 bg-white border border-gray-300 hover:bg-gray-50 text-gray-900">
+                  <Button 
+                    variant="outline"
+                    className="flex flex-col gap-2 h-auto p-4"
+                  >
                     <Smartphone className="w-5 h-5" />
                     <span>System</span>
                   </Button>
@@ -113,8 +126,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           {activeTab === 'editor' && (
             <div className="space-y-6">
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">Font Size</label>
-                <select className="px-3 py-2 border border-gray-300 rounded-md">
+                <label className="text-sm font-medium text-foreground">Font Size</label>
+                <select className="px-3 py-2 border border-border rounded-md bg-background text-foreground">
                   <option>Small</option>
                   <option>Medium</option>
                   <option>Large</option>
@@ -122,8 +135,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">Tab Width</label>
-                <select className="px-3 py-2 border border-gray-300 rounded-md">
+                <label className="text-sm font-medium text-foreground">Tab Width</label>
+                <select className="px-3 py-2 border border-border rounded-md bg-background text-foreground">
                   <option>2 spaces</option>
                   <option>4 spaces</option>
                   <option>8 spaces</option>
@@ -135,7 +148,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
       </div>
       
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200 flex justify-end">
+      <div className="p-4 border-t border-border flex justify-end bg-background">
         <Button className="gap-2">
           <Save className="w-4 h-4" />
           Save Changes
