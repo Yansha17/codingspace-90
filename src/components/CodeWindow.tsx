@@ -81,6 +81,14 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     onUpdate(codeWindow.id, { size: newSize });
   }, [codeWindow.id, onUpdate]);
 
+  const handleWidgetPositionChange = useCallback((position: { x: number; y: number }) => {
+    onUpdate(codeWindow.id, { position });
+  }, [codeWindow.id, onUpdate]);
+
+  const handleWidgetBringToFront = useCallback(() => {
+    onBringToFront(codeWindow.id);
+  }, [codeWindow.id, onBringToFront]);
+
   // Mobile widget mode - smaller, simplified interface
   if (isMobile && codeWindow.size.width < 300) {
     return (
@@ -103,6 +111,8 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
           onMouseDown={handleDragStart}
           onTouchStart={handleDragStart}
           onResize={handleWidgetResize}
+          onPositionChange={handleWidgetPositionChange}
+          onBringToFront={handleWidgetBringToFront}
         />
 
         <MobileCodeEditor
