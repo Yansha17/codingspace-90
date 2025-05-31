@@ -1,21 +1,20 @@
 
 import React, { memo, useState, useRef, useEffect, useCallback } from 'react';
-import { optimizeResize, triggerHapticFeedback } from '@/utils/performance';
+import { optimizeResize, triggerHapticFeedback, throttleRAF } from '@/utils/performance';
 
 interface MobileWidgetResizeHandleProps {
   onResize: (size: { width: number; height: number }) => void;
   currentSize: { width: number; height: number };
-  isMaximized?: boolean;
 }
 
 const MobileWidgetResizeHandle: React.FC<MobileWidgetResizeHandleProps> = memo(({
   onResize,
-  currentSize,
-  isMaximized = false
+  currentSize
 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const elementRef = useRef<HTMLDivElement>(null);
+  const throttledResize = useRef<((e: MouseEvent | TouchEvent) => void) | null>(null);
 
   const handleResizeStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -33,41 +32,48 @@ const MobileWidgetResizeHandle: React.FC<MobileWidgetResizeHandleProps> = memo((
       width: currentSize.width,
       height: currentSize.height
     };
-  }, [currentSize]);
+
+    // Initialize throttled resize function
+    throttledResize.current = throttleRAF((e: MouseEvent | TouchEvent) => {
+      if (!isResizing || !resizeStartRef.current) return;
+      
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      
+      const deltaX = clientX - resizeStartRef.current.x;
+      const deltaY = clientY - resizeStartRef.current.y;
+      
+      const minWidth = 140;
+      const minHeight = 120;
+      const maxWidth = window.innerWidth - 40;
+      const maxHeight = window.innerHeight - 120;
+      
+      const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.width + deltaX));
+      const newHeight = Math.max(minHeight, Math.min(maxHeight, resizeStartRef.current.height + deltaY));
+      
+      // Immediate visual feedback
+      const parentElement = elementRef.current?.parentElement;
+      if (parentElement) {
+        optimizeResize(parentElement, newWidth, newHeight);
+      }
+      
+      onResize({ width: newWidth, height: newHeight });
+    });
+  }, [currentSize, isResizing, onResize]);
 
   const handleResizeMove = useCallback((e: MouseEvent | TouchEvent) => {
-    if (!isResizing || !resizeStartRef.current) return;
-    
     e.preventDefault();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
-    const deltaX = clientX - resizeStartRef.current.x;
-    const deltaY = clientY - resizeStartRef.current.y;
-    
-    // Calculate new size with better constraints
-    const minWidth = 140;
-    const minHeight = 120;
-    const maxWidth = window.innerWidth - 40;
-    const maxHeight = window.innerHeight - 120;
-    
-    const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.width + deltaX));
-    const newHeight = Math.max(minHeight, Math.min(maxHeight, resizeStartRef.current.height + deltaY));
-    
-    // Immediate visual feedback with hardware acceleration
-    const parentElement = elementRef.current?.parentElement;
-    if (parentElement) {
-      optimizeResize(parentElement, newWidth, newHeight);
+    if (throttledResize.current) {
+      throttledResize.current(e);
     }
-    
-    onResize({ width: newWidth, height: newHeight });
-  }, [isResizing, onResize]);
+  }, []);
 
   const handleResizeEnd = useCallback(() => {
     setIsResizing(false);
     resizeStartRef.current = null;
+    throttledResize.current = null;
     
-    // Reset will-change for performance
+    // Reset performance optimizations
     const parentElement = elementRef.current?.parentElement;
     if (parentElement) {
       parentElement.style.willChange = 'auto';

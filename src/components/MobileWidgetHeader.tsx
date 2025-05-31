@@ -1,6 +1,6 @@
 
 import React, { memo, useCallback } from 'react';
-import { X, Edit3, Eye, Play, Maximize2, Minimize2, EyeOff, Code2 } from 'lucide-react';
+import { X, Edit3, Eye, Play, EyeOff, Code2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getLanguageConfig } from '@/config/languages';
 
@@ -20,12 +20,10 @@ interface MobileWidgetHeaderProps {
 const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
   title,
   langName,
-  isMaximized,
   showPreview,
   onEdit,
   onDelete,
   onTogglePreview,
-  onMaximize,
   onRun
 }) => {
   const langConfig = getLanguageConfig(title);
@@ -51,15 +49,6 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
       onTogglePreview();
     }
   }, [onTogglePreview]);
-
-  const handleMaximize = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (onMaximize) {
-      onMaximize();
-    }
-  }, [onMaximize]);
 
   const handleRun = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -116,24 +105,6 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
           </Button>
         )}
         
-        {/* Maximize/Minimize Button */}
-        {onMaximize && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleMaximize}
-            onTouchStart={handleMaximize}
-            className="h-6 w-6 p-0 hover:bg-purple-600 rounded-md z-20 relative touch-manipulation transition-all duration-200"
-            style={{ touchAction: 'manipulation' }}
-          >
-            {isMaximized ? (
-              <Minimize2 className="w-3 h-3 text-purple-400 hover:text-white" />
-            ) : (
-              <Maximize2 className="w-3 h-3 text-purple-400 hover:text-white" />
-            )}
-          </Button>
-        )}
-        
         {/* Edit Button */}
         <Button
           size="sm"
@@ -153,7 +124,6 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
           onClick={handleDelete}
           onTouchStart={handleDelete}
           className="h-6 w-6 p-0 hover:bg-red-600 rounded-md z-20 relative touch-manipulation transition-all duration-200"
-          style={{ touchAction: 'manipulation' }}
         >
           <X className="w-3 h-3 text-red-400 hover:text-white" />
         </Button>

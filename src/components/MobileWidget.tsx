@@ -5,6 +5,7 @@ import MobileWidgetHeader from './MobileWidgetHeader';
 import MobileWidgetContent from './MobileWidgetContent';
 import MobileWidgetResizeHandle from './MobileWidgetResizeHandle';
 import { getLanguageConfig } from '@/config/languages';
+import { optimizeTransform } from '@/utils/performance';
 
 interface MobileWidgetProps {
   title: string;
@@ -18,11 +19,9 @@ interface MobileWidgetProps {
   isDragging: boolean;
   showPreview?: boolean;
   previewKey?: number;
-  isMaximized?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onTogglePreview?: () => void;
-  onMaximize?: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
   onTouchStart: (e: React.TouchEvent) => void;
   onResize: (size: { width: number; height: number }) => void;
@@ -40,11 +39,9 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   isDragging,
   showPreview = false,
   previewKey = 0,
-  isMaximized = false,
   onEdit,
   onDelete,
   onTogglePreview,
-  onMaximize,
   onMouseDown,
   onTouchStart,
   onResize
@@ -63,6 +60,16 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   useEffect(() => {
     setLocalPreviewKey(previewKey);
   }, [previewKey]);
+
+  // Optimize drag performance with immediate transform updates
+  useEffect(() => {
+    if (widgetRef.current && isDragging) {
+      optimizeTransform(widgetRef.current, position.x, position.y, 1.01);
+    } else if (widgetRef.current) {
+      widgetRef.current.style.transform = 'scale(1)';
+      widgetRef.current.style.willChange = 'auto';
+    }
+  }, [position.x, position.y, isDragging]);
 
   const handleWidgetMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -102,7 +109,6 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     }
   }, [langName, code, langConfig.previewable, handleTogglePreview]);
 
-  // Enhanced resize handler that works regardless of maximize state
   const handleResize = useCallback((newSize: { width: number; height: number }) => {
     onResize(newSize);
   }, [onResize]);
@@ -110,7 +116,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   const currentShowPreview = onTogglePreview ? showPreview : localShowPreview;
   const currentPreviewKey = previewKey || localPreviewKey;
 
-  // Calculate dynamic styles for better performance
+  // Optimized styles for better performance
   const widgetStyles = {
     left: position.x,
     top: position.y,
@@ -123,8 +129,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     boxShadow: isDragging 
       ? '0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.2)' 
       : '0 15px 20px -5px rgba(0, 0, 0, 0.25)',
-    transform: isDragging ? 'scale(1.01)' : 'scale(1)',
-    transition: isDragging ? 'none' : 'all 0.1s ease-out',
+    transition: isDragging ? 'none' : 'box-shadow 0.1s ease-out, border-color 0.1s ease-out',
     backfaceVisibility: 'hidden' as const,
     perspective: '1000px',
     willChange: isDragging ? 'transform' : 'auto'
@@ -143,13 +148,12 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
       <MobileWidgetHeader
         title={title}
         langName={langName}
-        isMaximized={isMaximized}
+        isMaximized={false}
         showPreview={currentShowPreview}
         previewKey={currentPreviewKey}
         onEdit={onEdit}
         onDelete={onDelete}
         onTogglePreview={handleTogglePreview}
-        onMaximize={onMaximize}
         onRun={handleRun}
       />
 
@@ -162,11 +166,9 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
         previewKey={currentPreviewKey}
       />
 
-      {/* Always show resize handle - allow resizing even when maximized */}
       <MobileWidgetResizeHandle
         onResize={handleResize}
         currentSize={size}
-        isMaximized={isMaximized}
       />
     </div>
   );
