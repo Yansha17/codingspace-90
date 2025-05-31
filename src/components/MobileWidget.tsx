@@ -121,8 +121,20 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     setLocalCode(newCode);
   }, []);
 
-  // Simplified header event handlers - no conflicts
+  // Simplified header event handlers - only for draggable area
   const handleHeaderInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    // Only allow dragging if the event comes from the draggable area
+    const target = e.target as HTMLElement;
+    const isInteractiveElement = target.closest('button') || 
+                                target.closest('[data-radix-switch-root]') || 
+                                target.closest('[role="switch"]') ||
+                                target.closest('.switch-container');
+    
+    if (isInteractiveElement) {
+      // Don't start drag for interactive elements
+      return;
+    }
+    
     console.log('Header interaction triggered');
     e.preventDefault();
     e.stopPropagation();

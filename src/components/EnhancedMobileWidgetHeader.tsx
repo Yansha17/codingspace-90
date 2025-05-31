@@ -51,11 +51,18 @@ const EnhancedMobileWidgetHeader: React.FC<EnhancedMobileWidgetHeaderProps> = me
   }, [onDelete]);
 
   const handleTogglePreview = useCallback((checked: boolean) => {
+    // No need to prevent default or stop propagation for the switch itself
     triggerHapticFeedback('light');
     if (onTogglePreview) {
       onTogglePreview();
     }
   }, [onTogglePreview]);
+
+  const handleSwitchClick = useCallback((e: React.MouseEvent) => {
+    // Prevent the switch container from triggering drag
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
 
   const handleRun = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -103,14 +110,20 @@ const EnhancedMobileWidgetHeader: React.FC<EnhancedMobileWidgetHeaderProps> = me
         </div>
       </div>
 
-      {/* Code/Preview Switch */}
-      <div className="flex items-center gap-2 mx-2">
+      {/* Code/Preview Switch - Isolated from drag events */}
+      <div 
+        className="flex items-center gap-2 mx-2 relative z-30"
+        onClick={handleSwitchClick}
+        onMouseDown={handleSwitchClick}
+        onTouchStart={handleSwitchClick}
+      >
         <div className="flex items-center gap-1">
           <Code2 className="w-3 h-3 text-slate-300" />
           <Switch
             checked={showPreview}
             onCheckedChange={handleTogglePreview}
             className="data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-blue-600"
+            onClick={handleSwitchClick}
           />
           <Eye className="w-3 h-3 text-slate-300" />
         </div>
