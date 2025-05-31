@@ -92,7 +92,7 @@ const EnhancedMobileWidgetHeader: React.FC<EnhancedMobileWidgetHeaderProps> = me
   }, [onSaveToLibrary]);
 
   return (
-    <div className="bg-slate-700/95 backdrop-blur-sm border-b border-slate-600 p-2 flex items-center justify-between">
+    <div className="bg-slate-700/95 backdrop-blur-sm border-b border-slate-600 p-3 flex items-center justify-between">
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <div className={`w-6 h-6 rounded-lg ${langConfig.bgColor} flex items-center justify-center text-white shadow-lg`}>
           <IconComponent className="w-3 h-3" />
@@ -103,52 +103,41 @@ const EnhancedMobileWidgetHeader: React.FC<EnhancedMobileWidgetHeaderProps> = me
         </div>
       </div>
 
-      {/* Code/Preview Switch - Only show for previewable languages */}
+      {/* Enhanced Code/Preview Toggle - Only show for previewable languages */}
       {langConfig.previewable && (
         <div 
-          className="preview-toggle-isolated flex items-center gap-2 mx-2 relative z-50"
+          className="mx-3 flex items-center gap-2 bg-slate-800/80 backdrop-blur-sm rounded-xl p-2 border border-slate-600/50"
           style={{ 
             pointerEvents: 'auto',
             touchAction: 'manipulation',
             isolation: 'isolate'
           }}
-          onTouchStart={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
+          onTouchStart={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center gap-1">
-            <Code2 className="w-3 h-3 text-slate-300 pointer-events-none" />
-            <div 
-              className="relative z-[100] bg-slate-600 rounded-full p-1"
+          <div className={`flex items-center justify-center w-6 h-6 rounded-lg transition-all duration-200 ${
+            !showPreview ? 'bg-blue-500 text-white' : 'text-slate-400'
+          }`}>
+            <Code2 className="w-3 h-3" />
+          </div>
+          
+          <div className="relative">
+            <Switch
+              checked={showPreview}
+              onCheckedChange={handleTogglePreview}
+              className="data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-blue-600 scale-90 shadow-lg border border-slate-500"
               style={{ 
-                touchAction: 'manipulation',
                 pointerEvents: 'auto',
+                touchAction: 'manipulation',
                 isolation: 'isolate'
               }}
-            >
-              <Switch
-                checked={showPreview}
-                onCheckedChange={handleTogglePreview}
-                className="data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-blue-600 scale-75"
-                style={{ 
-                  pointerEvents: 'auto',
-                  touchAction: 'manipulation',
-                  isolation: 'isolate',
-                  position: 'relative',
-                  zIndex: 1000
-                }}
-              />
-            </div>
-            <Eye className="w-3 h-3 text-slate-300 pointer-events-none" />
+            />
+          </div>
+          
+          <div className={`flex items-center justify-center w-6 h-6 rounded-lg transition-all duration-200 ${
+            showPreview ? 'bg-emerald-500 text-white' : 'text-slate-400'
+          }`}>
+            <Eye className="w-3 h-3" />
           </div>
         </div>
       )}

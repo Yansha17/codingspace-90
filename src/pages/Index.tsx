@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -212,6 +211,7 @@ const IndexContent = () => {
         onCreateWidget={handleCreateWidget}
         onOpenLibrary={handleOpenNavigationDrawer}
         onOpenSettings={handleOpenSettings}
+        widgetCount={windows.length}
       />
       
       {/* Mobile Navigation Drawer */}

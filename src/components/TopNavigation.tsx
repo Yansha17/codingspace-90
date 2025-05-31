@@ -8,12 +8,14 @@ interface TopNavigationProps {
   onCreateWidget: () => void;
   onOpenLibrary?: () => void;
   onOpenSettings?: () => void;
+  widgetCount?: number;
 }
 
 const TopNavigation: React.FC<TopNavigationProps> = ({
   onCreateWidget,
   onOpenLibrary,
-  onOpenSettings
+  onOpenSettings,
+  widgetCount = 0
 }) => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-slate-800/95 backdrop-blur-sm border-b border-slate-700 px-4 py-3">
@@ -44,10 +46,15 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
           </div>
         </div>
 
-        {/* Center - Widget counter - this will be dynamic based on actual widget count */}
+        {/* Center - Circular Widget Counter */}
         <div className="flex items-center gap-2">
-          <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-            Active Widgets
+          <div className="relative">
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg border-2 border-blue-400">
+              <span className="text-white font-bold text-sm">{widgetCount}</span>
+            </div>
+            {widgetCount > 0 && (
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-slate-800"></div>
+            )}
           </div>
         </div>
 
