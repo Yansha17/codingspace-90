@@ -152,6 +152,19 @@ const Index = () => {
     }
   }, [windows]);
 
+  const handleCreateFromLibraryItem = useCallback((item: any) => {
+    const newWindow: CodeWindowType = {
+      id: `window-${Date.now()}`,
+      title: item.title,
+      language: item.language,
+      code: item.code,
+      position: { x: 50, y: 100 },
+      size: { width: 320, height: 240 },
+      zIndex: windows.length + 1
+    };
+    setWindows(prevWindows => [...prevWindows, newWindow]);
+  }, [windows.length]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 overflow-hidden relative">
       <CanvasBackground />
@@ -178,7 +191,7 @@ const Index = () => {
       {showLibrary && (
         <Library
           onClose={() => setShowLibrary(false)}
-          onCreateFromSnippet={addNewWindow}
+          onCreateFromLibrary={handleCreateFromLibraryItem}
         />
       )}
 
