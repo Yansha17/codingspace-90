@@ -1,7 +1,6 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import MobileWidget from '@/components/MobileWidget';
 import EnhancedFAB from '@/components/EnhancedFAB';
 import CanvasBackground from '@/components/CanvasBackground';
@@ -13,7 +12,7 @@ const Index = () => {
   const [windows, setWindows] = useState<CodeWindowType[]>([]);
   const [editingWindowId, setEditingWindowId] = useState<string | null>(null);
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   // Check if user has seen welcome message before
   useEffect(() => {
