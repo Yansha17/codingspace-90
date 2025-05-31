@@ -103,52 +103,55 @@ const EnhancedMobileWidgetHeader: React.FC<EnhancedMobileWidgetHeaderProps> = me
         </div>
       </div>
 
-      {/* Completely Isolated Code/Preview Switch */}
-      <div 
-        className="flex items-center gap-2 mx-2 relative z-50"
-        style={{ 
-          pointerEvents: 'auto',
-          touchAction: 'manipulation',
-          isolation: 'isolate'
-        }}
-        onTouchStart={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-1">
-          <Code2 className="w-3 h-3 text-slate-300 pointer-events-none" />
-          <div 
-            className="relative z-[100]"
-            style={{ 
-              touchAction: 'manipulation',
-              pointerEvents: 'auto',
-              isolation: 'isolate'
-            }}
-            onTouchStart={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-            }}
-            onMouseDown={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-            }}
-          >
-            <Switch
-              checked={showPreview}
-              onCheckedChange={handleTogglePreview}
-              className="data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-blue-600"
+      {/* Code/Preview Switch - Only show for previewable languages */}
+      {langConfig.previewable && (
+        <div 
+          className="preview-toggle-isolated flex items-center gap-2 mx-2 relative z-50"
+          style={{ 
+            pointerEvents: 'auto',
+            touchAction: 'manipulation',
+            isolation: 'isolate'
+          }}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+        >
+          <div className="flex items-center gap-1">
+            <Code2 className="w-3 h-3 text-slate-300 pointer-events-none" />
+            <div 
+              className="relative z-[100] bg-slate-600 rounded-full p-1"
               style={{ 
-                pointerEvents: 'auto',
                 touchAction: 'manipulation',
-                isolation: 'isolate',
-                position: 'relative',
-                zIndex: 1000
+                pointerEvents: 'auto',
+                isolation: 'isolate'
               }}
-            />
+            >
+              <Switch
+                checked={showPreview}
+                onCheckedChange={handleTogglePreview}
+                className="data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-blue-600 scale-75"
+                style={{ 
+                  pointerEvents: 'auto',
+                  touchAction: 'manipulation',
+                  isolation: 'isolate',
+                  position: 'relative',
+                  zIndex: 1000
+                }}
+              />
+            </div>
+            <Eye className="w-3 h-3 text-slate-300 pointer-events-none" />
           </div>
-          <Eye className="w-3 h-3 text-slate-300 pointer-events-none" />
         </div>
-      </div>
+      )}
       
       <div className="flex items-center gap-1">
         {/* Run Button - Show for runnable languages that aren't previewable */}
