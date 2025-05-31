@@ -20,7 +20,7 @@ const EnhancedMobileResizeHandle: React.FC<EnhancedMobileResizeHandleProps> = me
   const elementRef = useRef<HTMLDivElement>(null);
   const throttledResize = useRef<((e: MouseEvent | TouchEvent) => void) | null>(null);
 
-  const getDistance = (touch1: Touch, touch2: Touch) => {
+  const getDistance = (touch1: React.Touch, touch2: React.Touch) => {
     const dx = touch1.clientX - touch2.clientX;
     const dy = touch1.clientY - touch2.clientY;
     return Math.sqrt(dx * dx + dy * dy);
@@ -78,8 +78,12 @@ const EnhancedMobileResizeHandle: React.FC<EnhancedMobileResizeHandleProps> = me
     e.preventDefault();
 
     if (e.touches.length === 2 && isPinching && pinchStartRef.current) {
-      // Handle pinch gesture
-      const distance = getDistance(e.touches[0], e.touches[1]);
+      // Handle pinch gesture - use native Touch objects here
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const dx = touch1.clientX - touch2.clientX;
+      const dy = touch1.clientY - touch2.clientY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
       const scale = distance / pinchStartRef.current.distance;
       
       if (onPinchZoom) {

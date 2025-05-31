@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -178,7 +177,6 @@ const Index = () => {
       {/* Library Component */}
       {showLibrary && (
         <Library
-          isOpen={showLibrary}
           onClose={() => setShowLibrary(false)}
           onCreateFromSnippet={addNewWindow}
         />
@@ -187,7 +185,6 @@ const Index = () => {
       {/* Settings Component */}
       {showSettings && (
         <Settings
-          isOpen={showSettings}
           onClose={() => setShowSettings(false)}
         />
       )}
