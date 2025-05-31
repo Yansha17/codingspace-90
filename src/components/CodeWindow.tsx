@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
@@ -76,7 +77,6 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     togglePreview,
     handleEdit,
     handleDelete,
-    handleCodeChange,
     dragStyles
   } = useStandardWidget({ 
     window: codeWindow, 
@@ -103,7 +103,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     onBringToFront(codeWindow.id);
   }, [codeWindow.id, onBringToFront]);
 
-  const handleCodeChange = useCallback((newCode: string) => {
+  const handleLocalCodeChange = useCallback((newCode: string) => {
     setLocalCode(newCode);
   }, []);
 
@@ -139,7 +139,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
           onResize={handleWidgetResize}
           onPositionChange={handleWidgetPositionChange}
           onBringToFront={handleWidgetBringToFront}
-          onCodeChange={handleCodeChange}
+          onCodeChange={handleLocalCodeChange}
         />
 
         <FuturisticBottomEditor
@@ -148,7 +148,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
           title={codeWindow.title}
           language={codeWindow.language}
           code={localCode}
-          onChange={handleCodeChange}
+          onChange={handleLocalCodeChange}
           onRun={handleRunCode}
         />
       </>
@@ -194,7 +194,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
           <CodeEditor
             language={codeWindow.language}
             code={localCode}
-            onChange={handleCodeChange}
+            onChange={handleLocalCodeChange}
           />
         </div>
         
@@ -224,7 +224,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
         title={codeWindow.title}
         language={codeWindow.language}
         code={localCode}
-        onChange={handleCodeChange}
+        onChange={handleLocalCodeChange}
         onRun={handleRunCode}
       />
     </div>
