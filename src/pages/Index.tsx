@@ -7,11 +7,17 @@ import EnhancedFAB from '@/components/EnhancedFAB';
 import CanvasBackground from '@/components/CanvasBackground';
 import StartupWelcomeMessage from '@/components/StartupWelcomeMessage';
 import TopNavigation from '@/components/TopNavigation';
+import MobileNavigationDrawer from '@/components/MobileNavigationDrawer';
+import Library from '@/components/Library';
+import Settings from '@/components/Settings';
 
 const Index = () => {
   const [windows, setWindows] = useState<CodeWindowType[]>([]);
   const [editingWindowId, setEditingWindowId] = useState<string | null>(null);
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
+  const [showNavigationDrawer, setShowNavigationDrawer] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const isMobile = useIsMobile();
 
   // Check if user has seen welcome message before
@@ -42,7 +48,7 @@ const Index = () => {
         title: language,
         language,
         code: '',
-        position: { x: 50, y: 100 }, // Adjusted for top nav
+        position: { x: 50, y: 100 },
         size: { width: 320, height: 240 },
         zIndex: prevWindows.length + 1
       };
@@ -60,6 +66,28 @@ const Index = () => {
 
   const deleteWindow = useCallback((id: string) => {
     setWindows(prevWindows => prevWindows.filter(window => window.id !== id));
+  }, []);
+
+  const duplicateWindow = useCallback((id: string) => {
+    setWindows(prevWindows => {
+      const windowToDuplicate = prevWindows.find(window => window.id === id);
+      if (!windowToDuplicate) return prevWindows;
+
+      const newWindow: CodeWindowType = {
+        ...windowToDuplicate,
+        id: `window-${Date.now()}`,
+        position: { 
+          x: windowToDuplicate.position.x + 20, 
+          y: windowToDuplicate.position.y + 20 
+        },
+        zIndex: Math.max(...prevWindows.map(w => w.zIndex), 0) + 1
+      };
+      return [...prevWindows, newWindow];
+    });
+  }, []);
+
+  const clearAllWidgets = useCallback(() => {
+    setWindows([]);
   }, []);
 
   const bringToFront = useCallback((id: string) => {
@@ -89,19 +117,41 @@ const Index = () => {
   }, []);
 
   const handleCreateWidget = useCallback(() => {
-    // For now, create a JavaScript widget by default
     addNewWindow('javascript');
   }, [addNewWindow]);
 
   const handleOpenLibrary = useCallback(() => {
-    console.log('Opening library...');
-    // TODO: Implement library functionality
+    setShowNavigationDrawer(false);
+    setShowLibrary(true);
   }, []);
 
   const handleOpenSettings = useCallback(() => {
-    console.log('Opening settings...');
-    // TODO: Implement settings functionality
+    setShowNavigationDrawer(false);
+    setShowSettings(true);
   }, []);
+
+  const handleOpenNavigationDrawer = useCallback(() => {
+    setShowNavigationDrawer(true);
+  }, []);
+
+  const saveToLibrary = useCallback((id: string) => {
+    const widget = windows.find(w => w.id === id);
+    if (widget && widget.code.trim()) {
+      const savedSnippets = JSON.parse(localStorage.getItem('codeSnippets') || '[]');
+      const newSnippet = {
+        id: Date.now().toString(),
+        title: `${widget.language} snippet`,
+        language: widget.language,
+        code: widget.code,
+        createdAt: new Date().toISOString()
+      };
+      savedSnippets.push(newSnippet);
+      localStorage.setItem('codeSnippets', JSON.stringify(savedSnippets));
+      
+      // Show feedback (you could add a toast here)
+      console.log('Saved to library:', newSnippet.title);
+    }
+  }, [windows]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 overflow-hidden relative">
@@ -110,9 +160,37 @@ const Index = () => {
       {/* Top Navigation */}
       <TopNavigation 
         onCreateWidget={handleCreateWidget}
-        onOpenLibrary={handleOpenLibrary}
+        onOpenLibrary={handleOpenNavigationDrawer}
         onOpenSettings={handleOpenSettings}
       />
+      
+      {/* Mobile Navigation Drawer */}
+      <MobileNavigationDrawer
+        isOpen={showNavigationDrawer}
+        onClose={() => setShowNavigationDrawer(false)}
+        onOpenLibrary={handleOpenLibrary}
+        onOpenSettings={handleOpenSettings}
+        widgetCount={windows.length}
+        onCreateWidget={handleCreateWidget}
+        onClearAllWidgets={clearAllWidgets}
+      />
+
+      {/* Library Component */}
+      {showLibrary && (
+        <Library
+          isOpen={showLibrary}
+          onClose={() => setShowLibrary(false)}
+          onCreateFromSnippet={addNewWindow}
+        />
+      )}
+
+      {/* Settings Component */}
+      {showSettings && (
+        <Settings
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
       
       {/* Show welcome message on startup */}
       {showWelcomeMessage && (
@@ -135,6 +213,8 @@ const Index = () => {
             isDragging={false}
             onEdit={() => handleEditWindow(window.id)}
             onDelete={() => deleteWindow(window.id)}
+            onDuplicate={() => duplicateWindow(window.id)}
+            onSaveToLibrary={() => saveToLibrary(window.id)}
             onMouseDown={e => {
               e.stopPropagation();
               bringToFront(window.id);

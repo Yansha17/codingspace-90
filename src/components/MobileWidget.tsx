@@ -1,9 +1,9 @@
 
 import React, { useRef, useState, useEffect, useCallback, memo } from 'react';
 import MobileCodeEditor from './MobileCodeEditor';
-import MobileWidgetHeader from './MobileWidgetHeader';
+import EnhancedMobileWidgetHeader from './EnhancedMobileWidgetHeader';
 import MobileWidgetContent from './MobileWidgetContent';
-import MobileWidgetResizeHandle from './MobileWidgetResizeHandle';
+import EnhancedMobileResizeHandle from './EnhancedMobileResizeHandle';
 import { getLanguageConfig } from '@/config/languages';
 import { optimizeTransform } from '@/utils/performance';
 
@@ -21,6 +21,8 @@ interface MobileWidgetProps {
   previewKey?: number;
   onEdit: () => void;
   onDelete: () => void;
+  onDuplicate?: () => void;
+  onSaveToLibrary?: () => void;
   onTogglePreview?: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
   onTouchStart: (e: React.TouchEvent) => void;
@@ -41,6 +43,8 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   previewKey = 0,
   onEdit,
   onDelete,
+  onDuplicate,
+  onSaveToLibrary,
   onTogglePreview,
   onMouseDown,
   onTouchStart,
@@ -48,6 +52,9 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
 }) => {
   const [localShowPreview, setLocalShowPreview] = useState(showPreview);
   const [localPreviewKey, setLocalPreviewKey] = useState(previewKey);
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [previousSize, setPreviousSize] = useState({ width: 0, height: 0 });
+  const [previousPosition, setPreviousPosition] = useState({ x: 0, y: 0 });
   const widgetRef = useRef<HTMLDivElement>(null);
 
   const langConfig = getLanguageConfig(title);
@@ -102,6 +109,23 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     }
   }, [localShowPreview, onTogglePreview]);
 
+  const handleMaximize = useCallback(() => {
+    if (isMaximized) {
+      onResize(previousSize);
+      setIsMaximized(false);
+    } else {
+      setPreviousSize(size);
+      setPreviousPosition(position);
+      
+      const newSize = { 
+        width: window.innerWidth - 40, 
+        height: window.innerHeight - 120 
+      };
+      onResize(newSize);
+      setIsMaximized(true);
+    }
+  }, [isMaximized, size, position, onResize, previousSize]);
+
   const handleRun = useCallback(() => {
     console.log(`Running ${langName} code:`, code);
     if (langConfig.previewable) {
@@ -112,6 +136,12 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   const handleResize = useCallback((newSize: { width: number; height: number }) => {
     onResize(newSize);
   }, [onResize]);
+
+  const handlePinchZoom = useCallback((scale: number) => {
+    const newWidth = Math.max(140, Math.min(window.innerWidth - 40, size.width * scale));
+    const newHeight = Math.max(120, Math.min(window.innerHeight - 120, size.height * scale));
+    onResize({ width: newWidth, height: newHeight });
+  }, [size, onResize]);
 
   const currentShowPreview = onTogglePreview ? showPreview : localShowPreview;
   const currentPreviewKey = previewKey || localPreviewKey;
@@ -141,20 +171,39 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
       className={`absolute rounded-xl shadow-2xl border overflow-hidden select-none ${
         isDragging ? 'cursor-grabbing' : 'cursor-grab'
       }`}
-      style={widgetStyles}
+      style={{
+        left: position.x,
+        top: position.y,
+        width: Math.max(140, size.width),
+        height: Math.max(120, size.height),
+        zIndex: isDragging ? 9999 : zIndex,
+        touchAction: 'none',
+        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+        borderColor: isDragging ? '#10B981' : '#475569',
+        boxShadow: isDragging 
+          ? '0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.2)' 
+          : '0 15px 20px -5px rgba(0, 0, 0, 0.25)',
+        transition: isDragging ? 'none' : 'box-shadow 0.1s ease-out, border-color 0.1s ease-out',
+        backfaceVisibility: 'hidden',
+        perspective: '1000px',
+        willChange: isDragging ? 'transform' : 'auto'
+      }}
       onMouseDown={handleWidgetMouseDown}
       onTouchStart={handleWidgetTouchStart}
     >
-      <MobileWidgetHeader
+      <EnhancedMobileWidgetHeader
         title={title}
         langName={langName}
-        isMaximized={false}
+        isMaximized={isMaximized}
         showPreview={currentShowPreview}
         previewKey={currentPreviewKey}
         onEdit={onEdit}
         onDelete={onDelete}
         onTogglePreview={handleTogglePreview}
+        onMaximize={handleMaximize}
         onRun={handleRun}
+        onDuplicate={onDuplicate}
+        onSaveToLibrary={onSaveToLibrary}
       />
 
       <MobileWidgetContent
@@ -166,9 +215,10 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
         previewKey={currentPreviewKey}
       />
 
-      <MobileWidgetResizeHandle
+      <EnhancedMobileResizeHandle
         onResize={handleResize}
         currentSize={size}
+        onPinchZoom={handlePinchZoom}
       />
     </div>
   );

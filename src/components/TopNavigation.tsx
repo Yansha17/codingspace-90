@@ -43,10 +43,10 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
           </div>
         </div>
 
-        {/* Center - Widget counter */}
+        {/* Center - Widget counter - this will be dynamic based on actual widget count */}
         <div className="flex items-center gap-2">
           <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-            1 widget
+            Active Widgets
           </div>
         </div>
 
