@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, useCallback, memo } from 'react';
 import FloatingWidgetEditor from './FloatingWidgetEditor';
 import EnhancedMobileWidgetHeader from './EnhancedMobileWidgetHeader';
@@ -121,7 +122,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     setLocalCode(newCode);
   }, []);
 
-  // Enhanced header interaction with proper drag area detection
+  // Simplified header interaction - directly use startDrag
   const handleHeaderInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const target = e.target as HTMLElement;
     
@@ -137,15 +138,9 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
       return;
     }
 
-    // Only start drag from the draggable header area
-    const isDraggableArea = target.closest('[data-widget-header]') || 
-                           target.classList.contains('draggable-area') ||
-                           !target.closest('button, [role="switch"], [data-radix-switch-root]');
-    
-    if (isDraggableArea) {
-      console.log('Starting drag from header');
-      startDrag(e);
-    }
+    // Start drag for any other interaction with the header
+    console.log('Starting widget drag from header');
+    startDrag(e);
   }, [startDrag]);
 
   const handleTogglePreview = useCallback(() => {
@@ -218,32 +213,23 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
           userSelect: 'none',
           ...dragStyles
         }}
+        onMouseDown={handleHeaderInteraction}
+        onTouchStart={handleHeaderInteraction}
       >
-        <div 
-          data-widget-header
-          className="draggable-area cursor-grab active:cursor-grabbing"
-          onMouseDown={handleHeaderInteraction}
-          onTouchStart={handleHeaderInteraction}
-          style={{ 
-            touchAction: 'none',
-            userSelect: 'none'
-          }}
-        >
-          <EnhancedMobileWidgetHeader
-            title={title}
-            langName={langName}
-            isMaximized={isMaximized}
-            showPreview={currentShowPreview}
-            previewKey={currentPreviewKey}
-            onEdit={handleEdit}
-            onDelete={onDelete}
-            onTogglePreview={handleTogglePreview}
-            onMaximize={handleMaximize}
-            onRun={handleRun}
-            onDuplicate={onDuplicate}
-            onSaveToLibrary={onSaveToLibrary}
-          />
-        </div>
+        <EnhancedMobileWidgetHeader
+          title={title}
+          langName={langName}
+          isMaximized={isMaximized}
+          showPreview={currentShowPreview}
+          previewKey={currentPreviewKey}
+          onEdit={handleEdit}
+          onDelete={onDelete}
+          onTogglePreview={handleTogglePreview}
+          onMaximize={handleMaximize}
+          onRun={handleRun}
+          onDuplicate={onDuplicate}
+          onSaveToLibrary={onSaveToLibrary}
+        />
 
         <MobileWidgetContent
           title={title}

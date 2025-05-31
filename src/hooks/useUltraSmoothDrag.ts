@@ -21,18 +21,13 @@ export const useUltraSmoothDrag = ({
 }: UseSmoothDragProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [dragStarted, setDragStarted] = useState(false);
   
   const elementRef = useRef<HTMLDivElement>(null);
   const currentPositionRef = useRef({ x: 0, y: 0 });
-  const dragStartTimeRef = useRef(0);
-  const initialTouchRef = useRef({ x: 0, y: 0 });
   const rafIdRef = useRef<number | null>(null);
-  const lastPositionRef = useRef({ x: 0, y: 0 });
 
-  // Reduced thresholds for more precise control
-  const DRAG_THRESHOLD = 5; // Reduced from 8
-  const DRAG_DELAY = 100; // Reduced from 150
+  // Minimal threshold for immediate response
+  const DRAG_THRESHOLD = 2;
 
   const startDrag = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     // Don't start drag if clicking on interactive elements
@@ -41,8 +36,7 @@ export const useUltraSmoothDrag = ({
                                 target.closest('[data-radix-switch-root]') || 
                                 target.closest('[role="switch"]') ||
                                 target.closest('.switch-container') ||
-                                target.closest('[data-resize-handle]') ||
-                                target.closest('.preview-toggle-isolated');
+                                target.closest('[data-resize-handle]');
     
     if (isInteractiveElement) {
       console.log('Drag blocked - interactive element detected');
@@ -57,13 +51,13 @@ export const useUltraSmoothDrag = ({
     
     console.log('Drag start initiated at:', clientX, clientY);
     
-    dragStartTimeRef.current = Date.now();
-    initialTouchRef.current = { x: clientX, y: clientY };
-    setDragStarted(false);
+    setIsDragging(true);
+    triggerHapticFeedback('light');
+    onDragStart?.();
     
     const rect = elementRef.current?.getBoundingClientRect();
     if (rect) {
-      // Use actual touch position relative to element for precise control
+      // Calculate offset from touch point to element origin
       const offsetX = clientX - rect.left;
       const offsetY = clientY - rect.top;
       
@@ -73,38 +67,20 @@ export const useUltraSmoothDrag = ({
       });
       
       currentPositionRef.current = { x: rect.left, y: rect.top };
-      lastPositionRef.current = { x: clientX, y: clientY };
     }
-  }, []);
+  }, [onDragStart]);
 
   const updateDrag = useCallback((e: MouseEvent | TouchEvent) => {
+    if (!isDragging) return;
+    
     e.preventDefault();
     
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     
-    const deltaX = clientX - initialTouchRef.current.x;
-    const deltaY = clientY - initialTouchRef.current.y;
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    const timeElapsed = Date.now() - dragStartTimeRef.current;
-    
-    // Only start actual dragging if threshold is met
-    if (!dragStarted && (distance > DRAG_THRESHOLD || timeElapsed > DRAG_DELAY)) {
-      console.log('Drag threshold met, starting drag');
-      setIsDragging(true);
-      setDragStarted(true);
-      triggerHapticFeedback('light');
-      onDragStart?.();
-    }
-    
-    if (!dragStarted) return;
-    
-    // More precise movement calculation - follow finger exactly
-    const movementX = clientX - lastPositionRef.current.x;
-    const movementY = clientY - lastPositionRef.current.y;
-    
-    let newX = currentPositionRef.current.x + movementX;
-    let newY = currentPositionRef.current.y + movementY;
+    // Calculate new position based on finger/mouse position minus offset
+    let newX = clientX - dragOffset.x;
+    let newY = clientY - dragOffset.y;
     
     // Constrain to screen bounds if enabled
     if (constrainToScreen) {
@@ -113,7 +89,6 @@ export const useUltraSmoothDrag = ({
     }
     
     currentPositionRef.current = { x: newX, y: newY };
-    lastPositionRef.current = { x: clientX, y: clientY };
     
     // Cancel previous frame
     if (rafIdRef.current) {
@@ -122,20 +97,18 @@ export const useUltraSmoothDrag = ({
     
     // Smooth visual feedback with requestAnimationFrame
     rafIdRef.current = requestAnimationFrame(() => {
-      if (elementRef.current && dragStarted) {
-        // Reduced scale for more subtle feedback
-        optimizeTransform(elementRef.current, newX, newY, 1.005);
+      if (elementRef.current && isDragging) {
+        optimizeTransform(elementRef.current, newX, newY, 1.01);
       }
     });
     
     // Update parent component with exact position
     onPositionChange({ x: Math.round(newX), y: Math.round(newY) });
-  }, [dragStarted, constrainToScreen, elementWidth, elementHeight, onPositionChange, onDragStart]);
+  }, [isDragging, dragOffset.x, dragOffset.y, constrainToScreen, elementWidth, elementHeight, onPositionChange]);
 
   const endDrag = useCallback(() => {
     console.log('Drag ended');
     setIsDragging(false);
-    setDragStarted(false);
     onDragEnd?.();
     
     // Cancel any pending animation frame
@@ -152,9 +125,9 @@ export const useUltraSmoothDrag = ({
     }
   }, [onDragEnd]);
 
-  // Optimized event listeners with proper passive handling
+  // Global event listeners with proper cleanup
   useEffect(() => {
-    if (isDragging || dragStartTimeRef.current > 0) {
+    if (isDragging) {
       // Use non-passive for touchmove to allow preventDefault
       const touchOptions = { passive: false };
       const mouseOptions = { passive: false };
@@ -177,23 +150,22 @@ export const useUltraSmoothDrag = ({
           cancelAnimationFrame(rafIdRef.current);
           rafIdRef.current = null;
         }
-        dragStartTimeRef.current = 0;
       };
     }
   }, [isDragging, updateDrag, endDrag]);
 
   return {
     elementRef,
-    isDragging: dragStarted,
+    isDragging,
     startDrag,
     dragStyles: {
-      cursor: dragStarted ? 'grabbing' : 'grab',
-      transform: dragStarted ? 'scale(1.005)' : 'scale(1)', // Reduced scale
-      boxShadow: dragStarted 
+      cursor: isDragging ? 'grabbing' : 'grab',
+      transform: isDragging ? 'scale(1.01)' : 'scale(1)',
+      boxShadow: isDragging 
         ? '0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.2)' 
         : '0 15px 20px -5px rgba(0, 0, 0, 0.25)',
-      transition: dragStarted ? 'none' : 'all 0.2s ease-out',
-      willChange: dragStarted ? 'transform' : 'auto',
+      transition: isDragging ? 'none' : 'all 0.2s ease-out',
+      willChange: isDragging ? 'transform' : 'auto',
       backfaceVisibility: 'hidden' as const,
       perspective: '1000px',
       touchAction: 'none',
