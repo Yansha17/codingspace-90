@@ -18,9 +18,8 @@ const EnhancedMobileResizeHandle: React.FC<EnhancedMobileResizeHandleProps> = me
   const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const pinchStartRef = useRef<{ distance: number; scale: number } | null>(null);
   const elementRef = useRef<HTMLDivElement>(null);
-  const throttledResize = useRef<((e: MouseEvent | TouchEvent) => void) | null>(null);
 
-  const getDistance = (touch1: React.Touch, touch2: React.Touch) => {
+  const getDistance = (touch1: Touch, touch2: Touch) => {
     const dx = touch1.clientX - touch2.clientX;
     const dy = touch1.clientY - touch2.clientY;
     return Math.sqrt(dx * dx + dy * dy);
@@ -48,42 +47,15 @@ const EnhancedMobileResizeHandle: React.FC<EnhancedMobileResizeHandleProps> = me
         width: currentSize.width,
         height: currentSize.height
       };
-
-      throttledResize.current = throttleRAF((e: TouchEvent) => {
-        if (!isResizing || !resizeStartRef.current || e.touches.length !== 1) return;
-        
-        const touch = e.touches[0];
-        const deltaX = touch.clientX - resizeStartRef.current.x;
-        const deltaY = touch.clientY - resizeStartRef.current.y;
-        
-        const minWidth = 140;
-        const minHeight = 120;
-        const maxWidth = window.innerWidth - 40;
-        const maxHeight = window.innerHeight - 120;
-        
-        const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.width + deltaX));
-        const newHeight = Math.max(minHeight, Math.min(maxHeight, resizeStartRef.current.height + deltaY));
-        
-        const parentElement = elementRef.current?.parentElement;
-        if (parentElement) {
-          optimizeResize(parentElement, newWidth, newHeight);
-        }
-        
-        onResize({ width: newWidth, height: newHeight });
-      });
     }
-  }, [currentSize, isResizing, onResize]);
+  }, [currentSize]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     e.preventDefault();
 
     if (e.touches.length === 2 && isPinching && pinchStartRef.current) {
-      // Handle pinch gesture - use native Touch objects here
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const dx = touch1.clientX - touch2.clientX;
-      const dy = touch1.clientY - touch2.clientY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+      // Handle pinch gesture
+      const distance = getDistance(e.touches[0], e.touches[1]);
       const scale = distance / pinchStartRef.current.distance;
       
       if (onPinchZoom) {
@@ -94,23 +66,67 @@ const EnhancedMobileResizeHandle: React.FC<EnhancedMobileResizeHandleProps> = me
         const newHeight = Math.max(120, Math.min(window.innerHeight - 120, currentSize.height * scale));
         onResize({ width: newWidth, height: newHeight });
       }
-    } else if (e.touches.length === 1 && throttledResize.current) {
+    } else if (e.touches.length === 1 && isResizing && resizeStartRef.current) {
       // Handle single touch resize
-      throttledResize.current(e);
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - resizeStartRef.current.x;
+      const deltaY = touch.clientY - resizeStartRef.current.y;
+      
+      const minWidth = 140;
+      const minHeight = 120;
+      const maxWidth = window.innerWidth - 40;
+      const maxHeight = window.innerHeight - 120;
+      
+      const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.width + deltaX));
+      const newHeight = Math.max(minHeight, Math.min(maxHeight, resizeStartRef.current.height + deltaY));
+      
+      onResize({ width: newWidth, height: newHeight });
     }
-  }, [isPinching, currentSize, onPinchZoom, onResize]);
+  }, [isPinching, isResizing, currentSize, onPinchZoom, onResize]);
 
   const handleTouchEnd = useCallback(() => {
     setIsResizing(false);
     setIsPinching(false);
     resizeStartRef.current = null;
     pinchStartRef.current = null;
-    throttledResize.current = null;
+  }, []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     
-    const parentElement = elementRef.current?.parentElement;
-    if (parentElement) {
-      parentElement.style.willChange = 'auto';
-    }
+    setIsResizing(true);
+    triggerHapticFeedback('medium');
+    
+    resizeStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      width: currentSize.width,
+      height: currentSize.height
+    };
+  }, [currentSize]);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing || !resizeStartRef.current) return;
+    
+    e.preventDefault();
+    const deltaX = e.clientX - resizeStartRef.current.x;
+    const deltaY = e.clientY - resizeStartRef.current.y;
+    
+    const minWidth = 140;
+    const minHeight = 120;
+    const maxWidth = window.innerWidth - 40;
+    const maxHeight = window.innerHeight - 120;
+    
+    const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.width + deltaX));
+    const newHeight = Math.max(minHeight, Math.min(maxHeight, resizeStartRef.current.height + deltaY));
+    
+    onResize({ width: newWidth, height: newHeight });
+  }, [isResizing, onResize]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+    resizeStartRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -118,39 +134,45 @@ const EnhancedMobileResizeHandle: React.FC<EnhancedMobileResizeHandleProps> = me
       const options = { passive: false };
       document.addEventListener('touchmove', handleTouchMove, options);
       document.addEventListener('touchend', handleTouchEnd, { passive: true });
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
       
       return () => {
         document.removeEventListener('touchmove', handleTouchMove);
         document.removeEventListener('touchend', handleTouchEnd);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isResizing, isPinching, handleTouchMove, handleTouchEnd]);
+  }, [isResizing, isPinching, handleTouchMove, handleTouchEnd, handleMouseMove, handleMouseUp]);
 
   return (
     <div
       ref={elementRef}
       data-resize-handle="true"
-      className={`absolute bottom-2 right-2 w-10 h-10 cursor-se-resize z-30 touch-manipulation ${
-        isResizing || isPinching ? 'bg-blue-500 scale-110' : 'bg-slate-600 hover:bg-slate-500'
-      } rounded-full flex items-center justify-center transition-all opacity-80 hover:opacity-100 shadow-lg`}
+      className={`absolute bottom-2 right-2 w-8 h-8 cursor-se-resize z-30 touch-manipulation ${
+        isResizing || isPinching ? 'bg-blue-500 scale-125' : 'bg-slate-600 hover:bg-slate-500'
+      } rounded-lg flex items-center justify-center transition-all opacity-90 hover:opacity-100 shadow-lg`}
       onTouchStart={handleTouchStart}
+      onMouseDown={handleMouseDown}
       style={{ touchAction: 'none' }}
     >
-      <div className="flex flex-col gap-0.5">
-        <div className="flex gap-0.5">
-          <div className="w-1.5 h-1.5 bg-white rounded-full opacity-80"></div>
-          <div className="w-1.5 h-1.5 bg-white rounded-full opacity-60"></div>
-        </div>
-        <div className="flex gap-0.5">
-          <div className="w-1.5 h-1.5 bg-white rounded-full opacity-60"></div>
-          <div className="w-1.5 h-1.5 bg-white rounded-full opacity-80"></div>
-        </div>
+      <div className="grid grid-cols-2 gap-0.5">
+        <div className="w-1 h-1 bg-white rounded-full opacity-80"></div>
+        <div className="w-1 h-1 bg-white rounded-full opacity-60"></div>
+        <div className="w-1 h-1 bg-white rounded-full opacity-60"></div>
+        <div className="w-1 h-1 bg-white rounded-full opacity-80"></div>
       </div>
       
-      {/* Pinch indicator */}
+      {/* Visual feedback indicators */}
       {isPinching && (
         <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
           Pinch to resize
+        </div>
+      )}
+      {isResizing && !isPinching && (
+        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs px-2 py-1 rounded">
+          Resizing
         </div>
       )}
     </div>

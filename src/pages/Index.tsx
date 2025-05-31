@@ -9,6 +9,7 @@ import TopNavigation from '@/components/TopNavigation';
 import MobileNavigationDrawer from '@/components/MobileNavigationDrawer';
 import Library from '@/components/Library';
 import Settings from '@/components/Settings';
+import MobileCodeEditor from '@/components/MobileCodeEditor';
 
 const Index = () => {
   const [windows, setWindows] = useState<CodeWindowType[]>([]);
@@ -65,7 +66,11 @@ const Index = () => {
 
   const deleteWindow = useCallback((id: string) => {
     setWindows(prevWindows => prevWindows.filter(window => window.id !== id));
-  }, []);
+    // Close editor if deleting the currently edited window
+    if (editingWindowId === id) {
+      setEditingWindowId(null);
+    }
+  }, [editingWindowId]);
 
   const duplicateWindow = useCallback((id: string) => {
     setWindows(prevWindows => {
@@ -87,6 +92,7 @@ const Index = () => {
 
   const clearAllWidgets = useCallback(() => {
     setWindows([]);
+    setEditingWindowId(null);
   }, []);
 
   const bringToFront = useCallback((id: string) => {
@@ -114,6 +120,12 @@ const Index = () => {
   const handleCloseEditor = useCallback(() => {
     setEditingWindowId(null);
   }, []);
+
+  const handleCodeChange = useCallback((newCode: string) => {
+    if (editingWindowId) {
+      updateWindow(editingWindowId, { code: newCode });
+    }
+  }, [editingWindowId, updateWindow]);
 
   const handleCreateWidget = useCallback(() => {
     addNewWindow('javascript');
@@ -164,6 +176,9 @@ const Index = () => {
     };
     setWindows(prevWindows => [...prevWindows, newWindow]);
   }, [windows.length]);
+
+  // Get currently editing window
+  const editingWindow = editingWindowId ? windows.find(w => w.id === editingWindowId) : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 overflow-hidden relative">
@@ -237,6 +252,18 @@ const Index = () => {
           />
         ))}
       </div>
+
+      {/* Mobile Code Editor - Bottom Sheet */}
+      {editingWindow && (
+        <MobileCodeEditor
+          isOpen={!!editingWindowId}
+          onClose={handleCloseEditor}
+          title={editingWindow.title}
+          language={editingWindow.language}
+          code={editingWindow.code}
+          onChange={handleCodeChange}
+        />
+      )}
 
       <EnhancedFAB onCreateWindow={addNewWindow} />
     </div>
