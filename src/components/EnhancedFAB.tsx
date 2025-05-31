@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { LANGUAGE_CONFIG } from '@/config/languages';
+import { languages, LanguageConfig } from '@/config/languages';
 import { triggerHapticFeedback, useOptimizedEventHandler } from '@/utils/performance';
 
 interface EnhancedFABProps {
@@ -56,7 +56,7 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = memo(({ onCreateWindow }) => {
   console.log('FAB: Rendering, isExpanded:', isExpanded);
 
   // Sort languages alphabetically by name
-  const languageEntries = Object.entries(LANGUAGE_CONFIG).sort(([, a], [, b]) => 
+  const languageEntries = Object.entries(languages).sort(([, a], [, b]) => 
     a.name.localeCompare(b.name)
   );
 
@@ -108,7 +108,7 @@ const EnhancedFAB: React.FC<EnhancedFABProps> = memo(({ onCreateWindow }) => {
             paddingTop: '8px'
           }}
         >
-          {languageEntries.map(([key, lang], index) => {
+          {languageEntries.map(([key, lang]: [string, LanguageConfig], index) => {
             const IconComponent = lang.icon;
             return (
               <div

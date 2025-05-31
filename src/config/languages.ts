@@ -15,6 +15,8 @@ export interface LanguageConfig {
   icon: any;
   bgColor: string;
   textColor: string;
+  color: string; // Added for backwards compatibility
+  borderColor: string; // Added for border styling
   previewable: boolean;
   runnable: boolean;
   exampleCode: string;
@@ -27,6 +29,8 @@ export const languages: Record<string, LanguageConfig> = {
     icon: Globe,
     bgColor: 'bg-orange-500',
     textColor: 'text-orange-100',
+    color: '#ea580c', // Orange color for compatibility
+    borderColor: 'border-orange-500',
     previewable: true,
     runnable: false,
     exampleCode: `<!DOCTYPE html>
@@ -51,6 +55,8 @@ export const languages: Record<string, LanguageConfig> = {
     icon: Zap,
     bgColor: 'bg-yellow-500',
     textColor: 'text-yellow-100',
+    color: '#eab308', // Yellow color for compatibility
+    borderColor: 'border-yellow-500',
     previewable: true,
     runnable: true,
     exampleCode: `// JavaScript Example
@@ -81,6 +87,8 @@ incrementCounter();`
     icon: Code2,
     bgColor: 'bg-blue-500',
     textColor: 'text-blue-100',
+    color: '#3b82f6', // Blue color for compatibility
+    borderColor: 'border-blue-500',
     previewable: false,
     runnable: true,
     exampleCode: `# Python Example
@@ -115,6 +123,8 @@ print(f"Person: {person['name']}, Age: {person['age']}")`
     icon: Coffee,
     bgColor: 'bg-indigo-500',
     textColor: 'text-indigo-100',
+    color: '#6366f1', // Indigo color for compatibility
+    borderColor: 'border-indigo-500',
     previewable: false,
     runnable: true,
     exampleCode: `#include <iostream>
@@ -161,6 +171,8 @@ int main() {
     icon: Coffee,
     bgColor: 'bg-red-500',
     textColor: 'text-red-100',
+    color: '#ef4444', // Red color for compatibility
+    borderColor: 'border-red-500',
     previewable: false,
     runnable: true,
     exampleCode: `public class HelloWorld {
@@ -213,6 +225,8 @@ int main() {
     icon: Atom,
     bgColor: 'bg-cyan-500',
     textColor: 'text-cyan-100',
+    color: '#06b6d4', // Cyan color for compatibility
+    borderColor: 'border-cyan-500',
     previewable: true,
     runnable: false,
     exampleCode: `import React, { useState } from 'react';
@@ -261,6 +275,8 @@ export default Counter;`
     icon: Palette,
     bgColor: 'bg-pink-500',
     textColor: 'text-pink-100',
+    color: '#ec4899', // Pink color for compatibility
+    borderColor: 'border-pink-500',
     previewable: true,
     runnable: false,
     exampleCode: `/* CSS Example - Modern Card Design */
@@ -311,6 +327,9 @@ export default Counter;`
   }
 };
 
+// Export the languages object as LANGUAGE_CONFIG for backwards compatibility
+export const LANGUAGE_CONFIG = languages;
+
 export const getLanguageConfig = (title: string): LanguageConfig => {
   return languages[title.toLowerCase()] || languages.javascript;
 };
@@ -320,4 +339,19 @@ export const getLanguagesList = () => {
     id: key,
     ...config
   }));
+};
+
+// Add the missing getLanguageComment function
+export const getLanguageComment = (language: string): string => {
+  const comments: Record<string, string> = {
+    html: '<!-- HTML code here -->',
+    javascript: '// JavaScript code here',
+    python: '# Python code here',
+    cpp: '// C++ code here',
+    java: '// Java code here',
+    react: '// React code here',
+    css: '/* CSS code here */'
+  };
+  
+  return comments[language.toLowerCase()] || '// Code here';
 };
