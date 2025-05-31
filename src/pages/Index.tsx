@@ -10,7 +10,7 @@ import TopNavigation from '@/components/TopNavigation';
 import MobileNavigationDrawer from '@/components/MobileNavigationDrawer';
 import Library from '@/components/Library';
 import Settings from '@/components/Settings';
-import MobileCodeEditor from '@/components/MobileCodeEditor';
+import FloatingCodeEditor from '@/components/FloatingCodeEditor';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 
 type ViewState = 'dashboard' | 'library' | 'settings';
@@ -21,8 +21,6 @@ const IndexContent = () => {
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
   const [showNavigationDrawer, setShowNavigationDrawer] = useState(false);
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
-  const [draggedWidget, setDraggedWidget] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const isMobile = useIsMobile();
 
   // Check if user has seen welcome message before
@@ -173,7 +171,6 @@ const IndexContent = () => {
       savedSnippets.push(newSnippet);
       localStorage.setItem('codeSnippets', JSON.stringify(savedSnippets));
       
-      // Show feedback (you could add a toast here)
       console.log('Saved to library:', newSnippet.title);
     }
   }, [windows]);
@@ -189,81 +186,18 @@ const IndexContent = () => {
       zIndex: windows.length + 1
     };
     setWindows(prevWindows => [...prevWindows, newWindow]);
-    setCurrentView('dashboard'); // Navigate back to dashboard after creating widget
+    setCurrentView('dashboard');
   }, [windows.length]);
 
-  // Enhanced drag handlers
-  const handleWidgetMouseDown = useCallback((windowId: string) => (e: React.MouseEvent) => {
-    console.log('Widget mouse down for:', windowId);
-    setDraggedWidget(windowId);
+  // Enhanced position change handler
+  const handleWidgetPositionChange = useCallback((windowId: string) => (position: { x: number; y: number }) => {
+    updateWindow(windowId, { position });
+  }, [updateWindow]);
+
+  // Enhanced bring to front handler
+  const handleWidgetBringToFront = useCallback((windowId: string) => () => {
     bringToFront(windowId);
-    
-    const widget = windows.find(w => w.id === windowId);
-    if (widget) {
-      setDragOffset({
-        x: e.clientX - widget.position.x,
-        y: e.clientY - widget.position.y
-      });
-    }
-  }, [windows, bringToFront]);
-
-  const handleWidgetTouchStart = useCallback((windowId: string) => (e: React.TouchEvent) => {
-    console.log('Widget touch start for:', windowId);
-    setDraggedWidget(windowId);
-    bringToFront(windowId);
-    
-    const widget = windows.find(w => w.id === windowId);
-    if (widget && e.touches[0]) {
-      setDragOffset({
-        x: e.touches[0].clientX - widget.position.x,
-        y: e.touches[0].clientY - widget.position.y
-      });
-    }
-  }, [windows, bringToFront]);
-
-  // Global mouse/touch move handlers
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (draggedWidget) {
-        const newX = Math.max(0, Math.min(window.innerWidth - 120, e.clientX - dragOffset.x));
-        const newY = Math.max(60, Math.min(window.innerHeight - 120, e.clientY - dragOffset.y));
-        
-        updateWindow(draggedWidget, {
-          position: { x: newX, y: newY }
-        });
-      }
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (draggedWidget && e.touches[0]) {
-        e.preventDefault();
-        const newX = Math.max(0, Math.min(window.innerWidth - 120, e.touches[0].clientX - dragOffset.x));
-        const newY = Math.max(60, Math.min(window.innerHeight - 120, e.touches[0].clientY - dragOffset.y));
-        
-        updateWindow(draggedWidget, {
-          position: { x: newX, y: newY }
-        });
-      }
-    };
-
-    const handleEnd = () => {
-      setDraggedWidget(null);
-    };
-
-    if (draggedWidget) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleEnd);
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('touchend', handleEnd);
-
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleEnd);
-        document.removeEventListener('touchmove', handleTouchMove);
-        document.removeEventListener('touchend', handleEnd);
-      };
-    }
-  }, [draggedWidget, dragOffset, updateWindow]);
+  }, [bringToFront]);
 
   // Get currently editing window
   const editingWindow = editingWindowId ? windows.find(w => w.id === editingWindowId) : null;
@@ -312,14 +246,16 @@ const IndexContent = () => {
                 size={window.size}
                 zIndex={window.zIndex}
                 languageColor=""
-                isDragging={draggedWidget === window.id}
+                isDragging={false}
                 onEdit={() => handleEditWindow(window.id)}
                 onDelete={() => deleteWindow(window.id)}
                 onDuplicate={() => duplicateWindow(window.id)}
                 onSaveToLibrary={() => saveToLibrary(window.id)}
-                onMouseDown={handleWidgetMouseDown(window.id)}
-                onTouchStart={handleWidgetTouchStart(window.id)}
+                onMouseDown={() => {}}
+                onTouchStart={() => {}}
                 onResize={newSize => updateWindow(window.id, { size: newSize })}
+                onPositionChange={handleWidgetPositionChange(window.id)}
+                onBringToFront={handleWidgetBringToFront(window.id)}
               />
             ))}
           </div>
@@ -347,9 +283,9 @@ const IndexContent = () => {
         </div>
       )}
 
-      {/* Mobile Code Editor - Bottom Sheet */}
+      {/* Floating Code Editor */}
       {editingWindow && (
-        <MobileCodeEditor
+        <FloatingCodeEditor
           isOpen={!!editingWindowId}
           onClose={handleCloseEditor}
           title={editingWindow.title}

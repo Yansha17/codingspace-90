@@ -5,7 +5,7 @@ import EnhancedMobileWidgetHeader from './EnhancedMobileWidgetHeader';
 import MobileWidgetContent from './MobileWidgetContent';
 import EnhancedMobileResizeHandle from './EnhancedMobileResizeHandle';
 import { getLanguageConfig } from '@/config/languages';
-import { optimizeTransform } from '@/utils/performance';
+import { useUltraSmoothDrag } from '@/hooks/useUltraSmoothDrag';
 
 interface MobileWidgetProps {
   title: string;
@@ -27,6 +27,8 @@ interface MobileWidgetProps {
   onMouseDown: (e: React.MouseEvent) => void;
   onTouchStart: (e: React.TouchEvent) => void;
   onResize: (size: { width: number; height: number }) => void;
+  onPositionChange: (position: { x: number; y: number }) => void;
+  onBringToFront: () => void;
 }
 
 const MobileWidget: React.FC<MobileWidgetProps> = memo(({
@@ -38,7 +40,6 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   size,
   zIndex,
   languageColor,
-  isDragging,
   showPreview = false,
   previewKey = 0,
   onEdit,
@@ -46,18 +47,30 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   onDuplicate,
   onSaveToLibrary,
   onTogglePreview,
-  onMouseDown,
-  onTouchStart,
-  onResize
+  onResize,
+  onPositionChange,
+  onBringToFront
 }) => {
   const [localShowPreview, setLocalShowPreview] = useState(showPreview);
   const [localPreviewKey, setLocalPreviewKey] = useState(previewKey);
   const [isMaximized, setIsMaximized] = useState(false);
   const [previousSize, setPreviousSize] = useState({ width: 0, height: 0 });
   const [previousPosition, setPreviousPosition] = useState({ x: 0, y: 0 });
-  const widgetRef = useRef<HTMLDivElement>(null);
 
   const langConfig = getLanguageConfig(title);
+
+  // Ultra-smooth drag system
+  const {
+    elementRef,
+    isDragging,
+    startDrag,
+    dragStyles
+  } = useUltraSmoothDrag({
+    onPositionChange,
+    onDragStart: onBringToFront,
+    elementWidth: size.width,
+    elementHeight: size.height
+  });
 
   // Sync with parent state
   useEffect(() => {
@@ -68,13 +81,11 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     setLocalPreviewKey(previewKey);
   }, [previewKey]);
 
-  // Optimize drag performance with immediate transform updates
+  // Update widget position via CSS transform for immediate feedback
   useEffect(() => {
-    if (widgetRef.current && isDragging) {
-      optimizeTransform(widgetRef.current, position.x, position.y, 1.01);
-    } else if (widgetRef.current) {
-      widgetRef.current.style.transform = 'scale(1)';
-      widgetRef.current.style.willChange = 'auto';
+    if (elementRef.current && !isDragging) {
+      elementRef.current.style.left = `${position.x}px`;
+      elementRef.current.style.top = `${position.y}px`;
     }
   }, [position.x, position.y, isDragging]);
 
@@ -82,15 +93,15 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     console.log('Header mouse down triggered');
     e.preventDefault();
     e.stopPropagation();
-    onMouseDown(e);
-  }, [onMouseDown]);
+    startDrag(e);
+  }, [startDrag]);
 
   const handleHeaderTouchStart = useCallback((e: React.TouchEvent) => {
     console.log('Header touch start triggered');
     e.preventDefault();
     e.stopPropagation();
-    onTouchStart(e);
-  }, [onTouchStart]);
+    startDrag(e);
+  }, [startDrag]);
 
   const handleTogglePreview = useCallback(() => {
     if (onTogglePreview) {
@@ -104,6 +115,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   const handleMaximize = useCallback(() => {
     if (isMaximized) {
       onResize(previousSize);
+      onPositionChange(previousPosition);
       setIsMaximized(false);
     } else {
       setPreviousSize(size);
@@ -113,10 +125,13 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
         width: window.innerWidth - 40, 
         height: window.innerHeight - 120 
       };
+      const newPosition = { x: 20, y: 80 };
+      
       onResize(newSize);
+      onPositionChange(newPosition);
       setIsMaximized(true);
     }
-  }, [isMaximized, size, position, onResize, previousSize]);
+  }, [isMaximized, size, position, onResize, onPositionChange, previousSize, previousPosition]);
 
   const handleRun = useCallback(() => {
     console.log(`Running ${langName} code:`, code);
@@ -140,7 +155,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
 
   return (
     <div
-      ref={widgetRef}
+      ref={elementRef}
       className={`absolute rounded-xl shadow-2xl border overflow-hidden select-none ${
         isDragging ? 'cursor-grabbing' : 'cursor-grab'
       }`}
@@ -153,20 +168,14 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
         touchAction: 'none',
         background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
         borderColor: isDragging ? '#10B981' : '#475569',
-        boxShadow: isDragging 
-          ? '0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.2)' 
-          : '0 15px 20px -5px rgba(0, 0, 0, 0.25)',
-        transition: isDragging ? 'none' : 'box-shadow 0.1s ease-out, border-color 0.1s ease-out',
-        backfaceVisibility: 'hidden',
-        perspective: '1000px',
-        willChange: isDragging ? 'transform' : 'auto'
+        ...dragStyles
       }}
     >
       <div 
         data-widget-header
         onMouseDown={handleHeaderMouseDown}
         onTouchStart={handleHeaderTouchStart}
-        className="cursor-grab"
+        className="cursor-grab active:cursor-grabbing"
       >
         <EnhancedMobileWidgetHeader
           title={title}

@@ -1,8 +1,8 @@
 
 import { useCallback, useRef, useMemo } from 'react';
 
-// Ultra-fast throttle for drag operations - fires every 2ms for 500fps
-export const throttleFast = (func: (...args: any[]) => void, delay: number = 2) => {
+// Ultra-fast throttle for drag operations - fires every frame for 60fps
+export const throttleFast = (func: (...args: any[]) => void, delay: number = 16) => {
   let lastCall = 0;
   
   return (...args: any[]) => {
@@ -38,9 +38,9 @@ export const debounce = (func: (...args: any[]) => void, delay: number) => {
   };
 };
 
-// Hook for ultra-optimized drag handlers - 500fps for ultra-smooth dragging
+// Hook for ultra-optimized drag handlers - 60fps for ultra-smooth dragging
 export const useOptimizedDragHandler = (handler: (...args: any[]) => void, deps: any[]) => {
-  const throttledHandler = useMemo(() => throttleFast(handler, 2), deps);
+  const throttledHandler = useMemo(() => throttleRAF(handler), deps);
   return useCallback(throttledHandler, [throttledHandler]);
 };
 
@@ -78,16 +78,19 @@ export const nonPassiveEventOptions = { passive: false };
 
 // Ultra-fast transform optimization with immediate hardware acceleration
 export const optimizeTransform = (element: HTMLElement, x: number, y: number, scale: number = 1) => {
+  // Use translate3d for hardware acceleration
   element.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
   element.style.willChange = 'transform';
   element.style.backfaceVisibility = 'hidden';
   element.style.perspective = '1000px';
+  // Force layer creation for better performance
+  element.style.zIndex = element.style.zIndex || '0';
 };
 
 export const optimizeResize = (element: HTMLElement, width: number, height: number) => {
   element.style.width = `${width}px`;
   element.style.height = `${height}px`;
-  element.style.willChange = 'width, height';
+  element.style.willChange = 'width, height, transform';
 };
 
 // Smooth linear animation utilities for fluid interactions
@@ -99,8 +102,9 @@ export const createSmoothAnimation = (element: HTMLElement, property: string, fr
     const elapsed = currentTime - start;
     const progress = Math.min(elapsed / duration, 1);
     
-    // Simple linear easing for smooth movement
-    const currentValue = from + (diff * progress);
+    // Smooth easing function for natural movement
+    const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+    const currentValue = from + (diff * easeOutQuart);
     
     (element.style as any)[property] = `${currentValue}px`;
     
@@ -111,6 +115,7 @@ export const createSmoothAnimation = (element: HTMLElement, property: string, fr
     }
   };
   
+  element.style.willChange = property;
   requestAnimationFrame(animate);
 };
 
@@ -163,4 +168,27 @@ export const createPerformanceMonitor = () => {
       }
     }
   };
+};
+
+// Batch DOM updates for better performance
+export const batchDOMUpdates = (updates: (() => void)[]) => {
+  requestAnimationFrame(() => {
+    updates.forEach(update => update());
+  });
+};
+
+// Optimize element for animations
+export const prepareElementForAnimation = (element: HTMLElement) => {
+  element.style.willChange = 'transform';
+  element.style.backfaceVisibility = 'hidden';
+  element.style.perspective = '1000px';
+  element.style.transformStyle = 'preserve-3d';
+};
+
+// Reset element after animation
+export const resetElementAfterAnimation = (element: HTMLElement) => {
+  element.style.willChange = 'auto';
+  element.style.backfaceVisibility = 'visible';
+  element.style.perspective = 'none';
+  element.style.transformStyle = 'flat';
 };
