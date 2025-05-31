@@ -19,7 +19,7 @@ const EnhancedMobileResizeHandle: React.FC<EnhancedMobileResizeHandleProps> = me
   const pinchStartRef = useRef<{ distance: number; scale: number } | null>(null);
   const elementRef = useRef<HTMLDivElement>(null);
 
-  const getDistance = (touch1: Touch, touch2: Touch) => {
+  const getDistance = (touch1: React.Touch, touch2: React.Touch) => {
     const dx = touch1.clientX - touch2.clientX;
     const dy = touch1.clientY - touch2.clientY;
     return Math.sqrt(dx * dx + dy * dy);
