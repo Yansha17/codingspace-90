@@ -78,37 +78,15 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     }
   }, [position.x, position.y, isDragging]);
 
-  const handleWidgetMouseDown = useCallback((e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    
-    // Check if the click is on the header area for dragging
-    const headerElement = target.closest('[data-widget-header]');
-    const isButton = target.closest('button');
-    const isResizeHandle = target.closest('[data-resize-handle]');
-    
-    // Only allow dragging from the header area and not from buttons or resize handle
-    if (!headerElement || isButton || isResizeHandle) {
-      return;
-    }
-    
+  const handleHeaderMouseDown = useCallback((e: React.MouseEvent) => {
+    console.log('Header mouse down triggered');
     e.preventDefault();
     e.stopPropagation();
     onMouseDown(e);
   }, [onMouseDown]);
 
-  const handleWidgetTouchStart = useCallback((e: React.TouchEvent) => {
-    const target = e.target as HTMLElement;
-    
-    // Check if the touch is on the header area for dragging
-    const headerElement = target.closest('[data-widget-header]');
-    const isButton = target.closest('button');
-    const isResizeHandle = target.closest('[data-resize-handle]');
-    
-    // Only allow dragging from the header area and not from buttons or resize handle
-    if (!headerElement || isButton || isResizeHandle) {
-      return;
-    }
-
+  const handleHeaderTouchStart = useCallback((e: React.TouchEvent) => {
+    console.log('Header touch start triggered');
     e.preventDefault();
     e.stopPropagation();
     onTouchStart(e);
@@ -183,10 +161,13 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
         perspective: '1000px',
         willChange: isDragging ? 'transform' : 'auto'
       }}
-      onMouseDown={handleWidgetMouseDown}
-      onTouchStart={handleWidgetTouchStart}
     >
-      <div data-widget-header>
+      <div 
+        data-widget-header
+        onMouseDown={handleHeaderMouseDown}
+        onTouchStart={handleHeaderTouchStart}
+        className="cursor-grab"
+      >
         <EnhancedMobileWidgetHeader
           title={title}
           langName={langName}

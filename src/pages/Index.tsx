@@ -21,6 +21,8 @@ const IndexContent = () => {
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
   const [showNavigationDrawer, setShowNavigationDrawer] = useState(false);
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
+  const [draggedWidget, setDraggedWidget] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const isMobile = useIsMobile();
 
   // Check if user has seen welcome message before
@@ -190,11 +192,84 @@ const IndexContent = () => {
     setCurrentView('dashboard'); // Navigate back to dashboard after creating widget
   }, [windows.length]);
 
+  // Enhanced drag handlers
+  const handleWidgetMouseDown = useCallback((windowId: string) => (e: React.MouseEvent) => {
+    console.log('Widget mouse down for:', windowId);
+    setDraggedWidget(windowId);
+    bringToFront(windowId);
+    
+    const widget = windows.find(w => w.id === windowId);
+    if (widget) {
+      setDragOffset({
+        x: e.clientX - widget.position.x,
+        y: e.clientY - widget.position.y
+      });
+    }
+  }, [windows, bringToFront]);
+
+  const handleWidgetTouchStart = useCallback((windowId: string) => (e: React.TouchEvent) => {
+    console.log('Widget touch start for:', windowId);
+    setDraggedWidget(windowId);
+    bringToFront(windowId);
+    
+    const widget = windows.find(w => w.id === windowId);
+    if (widget && e.touches[0]) {
+      setDragOffset({
+        x: e.touches[0].clientX - widget.position.x,
+        y: e.touches[0].clientY - widget.position.y
+      });
+    }
+  }, [windows, bringToFront]);
+
+  // Global mouse/touch move handlers
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (draggedWidget) {
+        const newX = Math.max(0, Math.min(window.innerWidth - 120, e.clientX - dragOffset.x));
+        const newY = Math.max(60, Math.min(window.innerHeight - 120, e.clientY - dragOffset.y));
+        
+        updateWindow(draggedWidget, {
+          position: { x: newX, y: newY }
+        });
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (draggedWidget && e.touches[0]) {
+        e.preventDefault();
+        const newX = Math.max(0, Math.min(window.innerWidth - 120, e.touches[0].clientX - dragOffset.x));
+        const newY = Math.max(60, Math.min(window.innerHeight - 120, e.touches[0].clientY - dragOffset.y));
+        
+        updateWindow(draggedWidget, {
+          position: { x: newX, y: newY }
+        });
+      }
+    };
+
+    const handleEnd = () => {
+      setDraggedWidget(null);
+    };
+
+    if (draggedWidget) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleEnd);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleEnd);
+
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleEnd);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleEnd);
+      };
+    }
+  }, [draggedWidget, dragOffset, updateWindow]);
+
   // Get currently editing window
   const editingWindow = editingWindowId ? windows.find(w => w.id === editingWindowId) : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 dark:from-slate-950 dark:via-gray-950 dark:to-slate-900 overflow-hidden relative">
+    <div className="min-h-screen bg-white dark:bg-slate-900 overflow-hidden relative transition-colors duration-200">
       <CanvasBackground />
       
       {/* Top Navigation */}
@@ -237,19 +312,13 @@ const IndexContent = () => {
                 size={window.size}
                 zIndex={window.zIndex}
                 languageColor=""
-                isDragging={false}
+                isDragging={draggedWidget === window.id}
                 onEdit={() => handleEditWindow(window.id)}
                 onDelete={() => deleteWindow(window.id)}
                 onDuplicate={() => duplicateWindow(window.id)}
                 onSaveToLibrary={() => saveToLibrary(window.id)}
-                onMouseDown={e => {
-                  e.stopPropagation();
-                  bringToFront(window.id);
-                }}
-                onTouchStart={e => {
-                  e.stopPropagation();
-                  bringToFront(window.id);
-                }}
+                onMouseDown={handleWidgetMouseDown(window.id)}
+                onTouchStart={handleWidgetTouchStart(window.id)}
                 onResize={newSize => updateWindow(window.id, { size: newSize })}
               />
             ))}
