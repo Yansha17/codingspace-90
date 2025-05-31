@@ -1,6 +1,5 @@
-
 import React, { useRef, useState, useEffect, useCallback, memo } from 'react';
-import MobileCodeEditor from './MobileCodeEditor';
+import FloatingWidgetEditor from './FloatingWidgetEditor';
 import EnhancedMobileWidgetHeader from './EnhancedMobileWidgetHeader';
 import MobileWidgetContent from './MobileWidgetContent';
 import EnhancedMobileResizeHandle from './EnhancedMobileResizeHandle';
@@ -29,6 +28,7 @@ interface MobileWidgetProps {
   onResize: (size: { width: number; height: number }) => void;
   onPositionChange: (position: { x: number; y: number }) => void;
   onBringToFront: () => void;
+  onCodeChange?: (code: string) => void;
 }
 
 const MobileWidget: React.FC<MobileWidgetProps> = memo(({
@@ -49,13 +49,15 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   onTogglePreview,
   onResize,
   onPositionChange,
-  onBringToFront
+  onBringToFront,
+  onCodeChange
 }) => {
   const [localShowPreview, setLocalShowPreview] = useState(showPreview);
   const [localPreviewKey, setLocalPreviewKey] = useState(previewKey);
   const [isMaximized, setIsMaximized] = useState(false);
   const [previousSize, setPreviousSize] = useState({ width: 0, height: 0 });
   const [previousPosition, setPreviousPosition] = useState({ x: 0, y: 0 });
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
 
   const langConfig = getLanguageConfig(title);
 
@@ -88,6 +90,20 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
       elementRef.current.style.top = `${position.y}px`;
     }
   }, [position.x, position.y, isDragging]);
+
+  const handleEdit = useCallback(() => {
+    setIsEditorOpen(true);
+  }, []);
+
+  const handleCloseEditor = useCallback(() => {
+    setIsEditorOpen(false);
+  }, []);
+
+  const handleCodeChange = useCallback((newCode: string) => {
+    if (onCodeChange) {
+      onCodeChange(newCode);
+    }
+  }, [onCodeChange]);
 
   const handleHeaderMouseDown = useCallback((e: React.MouseEvent) => {
     console.log('Header mouse down triggered');
@@ -154,60 +170,73 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   const currentPreviewKey = previewKey || localPreviewKey;
 
   return (
-    <div
-      ref={elementRef}
-      className={`absolute rounded-xl shadow-2xl border overflow-hidden select-none ${
-        isDragging ? 'cursor-grabbing' : 'cursor-grab'
-      }`}
-      style={{
-        left: position.x,
-        top: position.y,
-        width: Math.max(140, size.width),
-        height: Math.max(120, size.height),
-        zIndex: isDragging ? 9999 : zIndex,
-        touchAction: 'none',
-        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-        borderColor: isDragging ? '#10B981' : '#475569',
-        ...dragStyles
-      }}
-    >
-      <div 
-        data-widget-header
-        onMouseDown={handleHeaderMouseDown}
-        onTouchStart={handleHeaderTouchStart}
-        className="cursor-grab active:cursor-grabbing"
+    <>
+      <div
+        ref={elementRef}
+        className={`absolute rounded-xl shadow-2xl border overflow-hidden select-none ${
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
+        style={{
+          left: position.x,
+          top: position.y,
+          width: Math.max(140, size.width),
+          height: Math.max(120, size.height),
+          zIndex: isDragging ? 9999 : zIndex,
+          touchAction: 'none',
+          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+          borderColor: isDragging ? '#10B981' : '#475569',
+          ...dragStyles
+        }}
       >
-        <EnhancedMobileWidgetHeader
+        <div 
+          data-widget-header
+          onMouseDown={handleHeaderMouseDown}
+          onTouchStart={handleHeaderTouchStart}
+          className="cursor-grab active:cursor-grabbing"
+        >
+          <EnhancedMobileWidgetHeader
+            title={title}
+            langName={langName}
+            isMaximized={isMaximized}
+            showPreview={currentShowPreview}
+            previewKey={currentPreviewKey}
+            onEdit={handleEdit}
+            onDelete={onDelete}
+            onTogglePreview={handleTogglePreview}
+            onMaximize={handleMaximize}
+            onRun={handleRun}
+            onDuplicate={onDuplicate}
+            onSaveToLibrary={onSaveToLibrary}
+          />
+        </div>
+
+        <MobileWidgetContent
           title={title}
           langName={langName}
-          isMaximized={isMaximized}
+          code={code}
+          size={size}
           showPreview={currentShowPreview}
           previewKey={currentPreviewKey}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onTogglePreview={handleTogglePreview}
-          onMaximize={handleMaximize}
-          onRun={handleRun}
-          onDuplicate={onDuplicate}
-          onSaveToLibrary={onSaveToLibrary}
+        />
+
+        <EnhancedMobileResizeHandle
+          onResize={handleResize}
+          currentSize={size}
+          onPinchZoom={handlePinchZoom}
         />
       </div>
 
-      <MobileWidgetContent
+      <FloatingWidgetEditor
+        isOpen={isEditorOpen}
+        onClose={handleCloseEditor}
         title={title}
-        langName={langName}
+        language={langName}
         code={code}
-        size={size}
-        showPreview={currentShowPreview}
-        previewKey={currentPreviewKey}
+        onChange={handleCodeChange}
+        onDelete={onDelete}
+        onRun={handleRun}
       />
-
-      <EnhancedMobileResizeHandle
-        onResize={handleResize}
-        currentSize={size}
-        onPinchZoom={handlePinchZoom}
-      />
-    </div>
+    </>
   );
 });
 

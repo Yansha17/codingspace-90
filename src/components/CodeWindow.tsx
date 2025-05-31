@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { CodeWindowType } from '@/types/CodeWindow';
 import CodeEditor from './CodeEditor';
@@ -9,6 +8,7 @@ import MobileWidget from './MobileWidget';
 import WindowResizeHandle from './WindowResizeHandle';
 import { getLanguageConfig } from '@/config/languages';
 import { useStandardWidget, StandardWidgetActions } from '@/hooks/useStandardWidget';
+import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 
 interface CodeWindowProps {
   window: CodeWindowType;
@@ -70,6 +70,10 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
     isMobile 
   });
 
+  const handleCodeChange = useDebouncedCallback((newCode: string) => {
+    onUpdate(codeWindow.id, { code: newCode });
+  }, 50, [codeWindow.id, onUpdate]);
+
   const handleRunCode = useCallback(() => {
     console.log(`Running ${codeWindow.language} code:`, codeWindow.code);
     if (langConfig.previewable) {
@@ -113,6 +117,7 @@ const CodeWindow: React.FC<CodeWindowProps> = memo(({
           onResize={handleWidgetResize}
           onPositionChange={handleWidgetPositionChange}
           onBringToFront={handleWidgetBringToFront}
+          onCodeChange={handleCodeChange}
         />
 
         <MobileCodeEditor

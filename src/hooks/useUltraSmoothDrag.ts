@@ -23,41 +23,7 @@ export const useUltraSmoothDrag = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
   const elementRef = useRef<HTMLDivElement>(null);
-  const rafIdRef = useRef<number | null>(null);
   const currentPositionRef = useRef({ x: 0, y: 0 });
-  const targetPositionRef = useRef({ x: 0, y: 0 });
-
-  // Ultra-smooth animation loop using RAF
-  const animateToTarget = useCallback(() => {
-    const current = currentPositionRef.current;
-    const target = targetPositionRef.current;
-    
-    // Smooth interpolation for ultra-fluid movement
-    const ease = 0.8;
-    const newX = current.x + (target.x - current.x) * ease;
-    const newY = current.y + (target.y - current.y) * ease;
-    
-    currentPositionRef.current = { x: newX, y: newY };
-    
-    // Apply transform with hardware acceleration
-    if (elementRef.current) {
-      optimizeTransform(elementRef.current, newX, newY, isDragging ? 1.01 : 1);
-    }
-    
-    // Update parent component
-    onPositionChange({ x: Math.round(newX), y: Math.round(newY) });
-    
-    // Continue animation if still dragging or not at target
-    const distance = Math.abs(target.x - newX) + Math.abs(target.y - newY);
-    if (isDragging || distance > 0.1) {
-      rafIdRef.current = requestAnimationFrame(animateToTarget);
-    } else {
-      rafIdRef.current = null;
-      if (elementRef.current) {
-        elementRef.current.style.willChange = 'auto';
-      }
-    }
-  }, [isDragging, onPositionChange]);
 
   const startDrag = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -71,22 +37,20 @@ export const useUltraSmoothDrag = ({
     
     const rect = elementRef.current?.getBoundingClientRect();
     if (rect) {
+      // Calculate offset from touch/click point to element center for better feel
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
       setDragOffset({
-        x: clientX - rect.left,
-        y: clientY - rect.top
+        x: clientX - centerX,
+        y: clientY - centerY
       });
       
       currentPositionRef.current = { x: rect.left, y: rect.top };
-      targetPositionRef.current = { x: rect.left, y: rect.top };
     }
     
     onDragStart?.();
-    
-    // Start animation loop
-    if (!rafIdRef.current) {
-      rafIdRef.current = requestAnimationFrame(animateToTarget);
-    }
-  }, [onDragStart, animateToTarget]);
+  }, [onDragStart]);
 
   const updateDrag = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isDragging) return;
@@ -95,8 +59,9 @@ export const useUltraSmoothDrag = ({
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     
-    let newX = clientX - dragOffset.x;
-    let newY = clientY - dragOffset.y;
+    // Calculate position with element centered on finger/cursor
+    let newX = clientX - dragOffset.x - elementWidth / 2;
+    let newY = clientY - dragOffset.y - elementHeight / 2;
     
     // Constrain to screen bounds if enabled
     if (constrainToScreen) {
@@ -104,21 +69,30 @@ export const useUltraSmoothDrag = ({
       newY = Math.max(60, Math.min(window.innerHeight - elementHeight, newY));
     }
     
-    // Update target position for smooth interpolation
-    targetPositionRef.current = { x: newX, y: newY };
-  }, [isDragging, dragOffset, constrainToScreen, elementWidth, elementHeight]);
+    currentPositionRef.current = { x: newX, y: newY };
+    
+    // Immediate visual feedback with hardware acceleration
+    if (elementRef.current) {
+      optimizeTransform(elementRef.current, newX, newY, 1.02);
+    }
+    
+    // Update parent component immediately
+    onPositionChange({ x: Math.round(newX), y: Math.round(newY) });
+  }, [isDragging, dragOffset, constrainToScreen, elementWidth, elementHeight, onPositionChange]);
 
   const endDrag = useCallback(() => {
     setIsDragging(false);
     onDragEnd?.();
     
-    // Allow animation to complete smoothly
-    if (!rafIdRef.current) {
-      rafIdRef.current = requestAnimationFrame(animateToTarget);
+    // Reset transform scale
+    if (elementRef.current) {
+      const pos = currentPositionRef.current;
+      optimizeTransform(elementRef.current, pos.x, pos.y, 1);
+      elementRef.current.style.willChange = 'auto';
     }
-  }, [onDragEnd, animateToTarget]);
+  }, [onDragEnd]);
 
-  // Global event listeners
+  // Global event listeners with immediate response
   useEffect(() => {
     if (isDragging) {
       const options = { passive: false };
@@ -136,29 +110,21 @@ export const useUltraSmoothDrag = ({
     }
   }, [isDragging, updateDrag, endDrag]);
 
-  // Cleanup RAF on unmount
-  useEffect(() => {
-    return () => {
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-    };
-  }, []);
-
   return {
     elementRef,
     isDragging,
     startDrag,
     dragStyles: {
       cursor: isDragging ? 'grabbing' : 'grab',
-      transform: isDragging ? 'scale(1.01)' : 'scale(1)',
+      transform: isDragging ? 'scale(1.02)' : 'scale(1)',
       boxShadow: isDragging 
         ? '0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 0 15px rgba(16, 185, 129, 0.2)' 
         : '0 15px 20px -5px rgba(0, 0, 0, 0.25)',
       transition: isDragging ? 'none' : 'all 0.1s ease-out',
       willChange: isDragging ? 'transform' : 'auto',
       backfaceVisibility: 'hidden' as const,
-      perspective: '1000px'
+      perspective: '1000px',
+      touchAction: 'none'
     }
   };
 };
