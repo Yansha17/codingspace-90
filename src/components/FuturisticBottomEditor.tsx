@@ -1,11 +1,15 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Code, Eye, Play, Maximize2, Minimize2 } from 'lucide-react';
+import React, { useState, useRef, useEffect, memo } from 'react';
+import { X, Code, Eye, Play, ChevronUp, ChevronDown, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import CodeEditor from './CodeEditor';
 import CodePreview from './CodePreview';
-import { getLanguageConfig } from '@/config/languages';
+import { getLanguageConfig, getLanguageComment } from '@/config/languages';
+import { 
+  triggerHapticFeedback, 
+  useOptimizedEventHandler,
+  createSpringAnimation 
+} from '@/utils/performance';
 
 interface FuturisticBottomEditorProps {
   isOpen: boolean;
@@ -17,7 +21,7 @@ interface FuturisticBottomEditorProps {
   onRun?: () => void;
 }
 
-const FuturisticBottomEditor: React.FC<FuturisticBottomEditorProps> = ({
+const FuturisticBottomEditor: React.FC<FuturisticBottomEditorProps> = memo(({
   isOpen,
   onClose,
   title,
@@ -26,189 +30,291 @@ const FuturisticBottomEditor: React.FC<FuturisticBottomEditorProps> = ({
   onChange,
   onRun
 }) => {
-  const [view, setView] = useState<'code' | 'preview'>('code');
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [view, setView] = useState<'code' | 'preview' | 'split'>('code');
+  const [height, setHeight] = useState(60); // Start with larger height
+  const [isResizing, setIsResizing] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const resizeStartRef = useRef<{ y: number; height: number } | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   const langConfig = getLanguageConfig(language);
   const IconComponent = langConfig.icon;
 
-  const handleChange = (newCode: string) => {
-    onChange(newCode);
-  };
+  // Enhanced preview capability check
+  const previewableLanguages = ['html', 'css', 'javascript', 'react'];
+  const enhancedCanPreview = langConfig.previewable || previewableLanguages.includes(language.toLowerCase());
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const textarea = e.currentTarget;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      
-      const newValue = code.substring(0, start) + '  ' + code.substring(end);
-      onChange(newValue);
-      
-      setTimeout(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + 2;
-      }, 0);
+  // Enhanced run capability check
+  const runnableLanguages = ['javascript', 'python', 'html', 'css'];
+  const enhancedCanRun = langConfig.runnable || runnableLanguages.includes(language.toLowerCase());
+
+  // Initialize with better default height when opened
+  useEffect(() => {
+    if (isOpen && !isMaximized) {
+      setHeight(60); // Better default height
     }
-  };
+  }, [isOpen, isMaximized]);
 
-  const handleRunCode = () => {
-    console.log(`Running ${language} code:`, code);
-    if (langConfig.previewable) {
-      setView('preview');
+  const handleResizeStart = useOptimizedEventHandler((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    setIsResizing(true);
+    resizeStartRef.current = { y: clientY, height };
+    triggerHapticFeedback('light');
+  }, [height]);
+
+  const handleResizeMove = useOptimizedEventHandler((e: MouseEvent | TouchEvent) => {
+    if (!isResizing || !resizeStartRef.current) return;
+    
+    e.preventDefault();
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const deltaY = resizeStartRef.current.y - clientY;
+    const viewportHeight = window.innerHeight;
+    const newHeight = Math.max(30, Math.min(90, resizeStartRef.current.height + (deltaY / viewportHeight) * 100));
+    
+    setHeight(newHeight);
+  }, [isResizing]);
+
+  const handleResizeEnd = useOptimizedEventHandler(() => {
+    setIsResizing(false);
+    resizeStartRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    if (isResizing) {
+      const options = { passive: false };
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+      document.addEventListener('touchmove', handleResizeMove, options);
+      document.addEventListener('touchend', handleResizeEnd);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove);
+        document.removeEventListener('mouseup', handleResizeEnd);
+        document.removeEventListener('touchmove', handleResizeMove);
+        document.removeEventListener('touchend', handleResizeEnd);
+      };
+    }
+  }, [isResizing, handleResizeMove, handleResizeEnd]);
+
+  const handleToggleMaximize = useOptimizedEventHandler(() => {
+    const newMaximized = !isMaximized;
+    const targetHeight = newMaximized ? 95 : 60;
+    
+    setIsMaximized(newMaximized);
+    
+    // Smooth spring animation for height change
+    if (editorRef.current) {
+      createSpringAnimation(editorRef.current, 'height', height, targetHeight, 400);
+    }
+    
+    setHeight(targetHeight);
+    triggerHapticFeedback('medium');
+  }, [isMaximized, height]);
+
+  const handleViewChange = useOptimizedEventHandler((newView: 'code' | 'preview' | 'split') => {
+    setView(newView);
+    if ((newView === 'preview' || newView === 'split') && enhancedCanPreview) {
       setPreviewKey(prev => prev + 1);
     }
+    triggerHapticFeedback('light');
+  }, [enhancedCanPreview]);
+
+  const handleRun = useOptimizedEventHandler(() => {
+    triggerHapticFeedback('medium');
     if (onRun) {
       onRun();
     }
-  };
-
-  const handleViewToggle = (checked: boolean) => {
-    setView(checked ? 'preview' : 'code');
-    if (checked && langConfig.previewable) {
+    if (enhancedCanPreview) {
+      setView('preview');
       setPreviewKey(prev => prev + 1);
     }
-  };
+  }, [onRun, enhancedCanPreview]);
 
-  const getLanguageComment = () => {
-    switch (language) {
-      case 'javascript':
-        return '// JavaScript code here...';
-      case 'html':
-        return '<!-- HTML markup here -->';
-      case 'css':
-        return '/* CSS styles here */';
-      case 'python':
-        return '# Python code here...';
-      case 'java':
-        return '// Java code here...';
-      case 'cpp':
-        return '// C++ code here...';
-      case 'react':
-        return '// React component here...';
-      case 'php':
-        return '<?php // PHP code here... ?>';
-      case 'swift':
-        return '// Swift code here...';
-      case 'go':
-        return '// Go code here...';
-      case 'rust':
-        return '// Rust code here...';
-      case 'sql':
-        return '-- SQL queries here...';
-      default:
-        return '// Code here...';
-    }
-  };
+  const handleClose = useOptimizedEventHandler(() => {
+    triggerHapticFeedback('light');
+    onClose();
+  }, [onClose]);
 
   if (!isOpen) return null;
 
+  const currentHeight = isMaximized ? '95vh' : `${height}vh`;
+
   return (
-    <div className={`fixed bottom-4 left-4 right-4 z-50 transition-all duration-300 ${
-      isExpanded ? 'h-[85vh]' : 'h-[60vh]'
-    }`}>
-      <div className="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-slate-700/50 backdrop-blur-xl overflow-hidden">
-        {/* Futuristic Header */}
-        <div className="bg-gradient-to-r from-slate-800/90 to-slate-700/90 backdrop-blur-sm border-b border-slate-600/50 p-4">
-          <div className="flex items-center justify-between">
-            {/* Title Section */}
-            <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-xl ${langConfig.bgColor} flex items-center justify-center text-white shadow-lg`}>
-                <IconComponent className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold text-lg">{title}</h3>
-                <p className="text-slate-400 text-sm">{language}</p>
-              </div>
-            </div>
+    <div 
+      ref={editorRef}
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-50 flex flex-col will-change-transform" 
+      style={{ 
+        height: currentHeight, 
+        transition: 'height 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        backdropFilter: 'blur(10px)',
+        background: 'rgba(255, 255, 255, 0.95)',
+        maxHeight: '95vh'
+      }}
+    >
+      {/* Enhanced Resize Handle - Always visible */}
+      <div
+        className={`h-3 bg-gradient-to-r from-gray-100 to-gray-200 border-b border-gray-200 cursor-ns-resize flex items-center justify-center hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200 transition-all duration-200 flex-shrink-0 ${
+          isResizing ? 'bg-gradient-to-r from-blue-100 to-blue-200' : ''
+        }`}
+        onMouseDown={handleResizeStart}
+        onTouchStart={handleResizeStart}
+        style={{ touchAction: 'none' }}
+      >
+        <div className={`w-12 h-1.5 rounded-full transition-all duration-200 ${
+          isResizing ? 'bg-blue-500' : 'bg-gray-400 hover:bg-blue-400'
+        }`}></div>
+      </div>
 
-            {/* Controls */}
-            <div className="flex items-center gap-3">
-              {/* Code/Preview Switch */}
-              {langConfig.previewable && (
-                <div className="flex items-center gap-2 bg-slate-700/50 rounded-lg p-2">
-                  <Code className="w-4 h-4 text-slate-300" />
-                  <Switch
-                    checked={view === 'preview'}
-                    onCheckedChange={handleViewToggle}
-                    className="data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-blue-600"
-                  />
-                  <Eye className="w-4 h-4 text-slate-300" />
-                </div>
-              )}
-
-              {/* Run Button */}
-              {langConfig.runnable && (
-                <Button
-                  onClick={handleRunCode}
-                  className="bg-green-600 hover:bg-green-700 text-white rounded-lg h-10 px-4 shadow-lg transition-all duration-200"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Run
-                </Button>
-              )}
-
-              {/* Expand Button */}
-              <Button
-                variant="ghost"
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="h-10 w-10 p-0 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-200"
-              >
-                {isExpanded ? (
-                  <Minimize2 className="w-4 h-4" />
-                ) : (
-                  <Maximize2 className="w-4 h-4" />
-                )}
-              </Button>
-
-              {/* Close Button */}
-              <Button
-                variant="ghost"
-                onClick={onClose}
-                className="h-10 w-10 p-0 text-slate-300 hover:text-white hover:bg-red-600/20 rounded-lg transition-all duration-200"
-              >
-                <X className="w-5 h-5" />
-              </Button>
+      {/* Enhanced Header - Fixed position, always visible */}
+      <div className="flex items-center justify-between border-b border-gray-200 p-3 bg-gradient-to-r from-gray-50 to-white flex-shrink-0 min-h-[60px]">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className={`w-8 h-8 rounded-xl ${langConfig.bgColor} flex items-center justify-center text-white shadow-lg transition-transform duration-200 hover:scale-105 flex-shrink-0`}>
+            <IconComponent className="w-4 h-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-bold text-gray-900 text-sm truncate">
+              Editing: <span className="text-blue-600">{title}</span>
+            </h3>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="bg-gradient-to-r from-gray-200 to-gray-300 px-2 py-0.5 rounded-full text-xs font-medium">{language}</div>
+              <div className="text-xs text-gray-500">{code.split('\n').length} lines</div>
             </div>
           </div>
         </div>
-
-        {/* Editor Content */}
-        <div className="h-full overflow-hidden">
-          {view === 'code' ? (
-            <div className="h-full">
+        
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Enhanced View Toggle Buttons */}
+          <div className="flex items-center bg-gray-200 dark:bg-gray-700 rounded-lg p-0.5 shadow-inner">
+            <Button
+              size="sm"
+              variant={view === 'code' ? 'default' : 'ghost'}
+              onClick={() => handleViewChange('code')}
+              className="h-7 px-2 text-xs rounded-md transition-all duration-200"
+            >
+              <Code className="w-3 h-3" />
+            </Button>
+            {enhancedCanPreview && (
+              <>
+                <Button
+                  size="sm"
+                  variant={view === 'split' ? 'default' : 'ghost'}
+                  onClick={() => handleViewChange('split')}
+                  className="h-7 px-2 text-xs rounded-md transition-all duration-200"
+                >
+                  <Maximize2 className="w-3 h-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant={view === 'preview' ? 'default' : 'ghost'}
+                  onClick={() => handleViewChange('preview')}
+                  className="h-7 px-2 text-xs rounded-md transition-all duration-200"
+                >
+                  <Eye className="w-3 h-3" />
+                </Button>
+              </>
+            )}
+          </div>
+          
+          {/* Enhanced Action Buttons */}
+          {enhancedCanRun && (
+            <Button
+              size="sm"
+              onClick={handleRun}
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 h-7 px-2 text-xs shadow-lg transition-all duration-200"
+            >
+              <Play className="w-3 h-3 mr-1" />
+              Run
+            </Button>
+          )}
+          
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            onClick={handleToggleMaximize} 
+            className="p-1 h-7 w-7 hover:bg-gray-100 rounded-md transition-all duration-200"
+          >
+            {isMaximized ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+          </Button>
+          
+          {/* Always visible close button */}
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            onClick={handleClose} 
+            className="p-1 h-7 w-7 hover:bg-red-100 text-red-600 rounded-md transition-all duration-200 flex-shrink-0"
+          >
+            <X className="w-3 h-3" />
+          </Button>
+        </div>
+      </div>
+      
+      {/* Enhanced Editor/Preview Content - Scrollable */}
+      <div className="flex-1 overflow-hidden bg-gray-50 min-h-0">
+        {view === 'code' ? (
+          <div className="h-full overflow-hidden">
+            <CodeEditor
+              language={language}
+              code={code}
+              onChange={onChange}
+            />
+          </div>
+        ) : view === 'preview' ? (
+          <div className="h-full overflow-hidden">
+            {enhancedCanPreview ? (
+              <CodePreview
+                key={previewKey}
+                language={language}
+                code={code}
+              />
+            ) : (
+              <div className="h-full flex items-center justify-center bg-gray-100">
+                <div className="text-center">
+                  <div className="text-gray-400 mb-2">
+                    <Eye className="w-12 h-12 mx-auto" />
+                  </div>
+                  <p className="text-gray-600">Preview not available for {language}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="h-full flex overflow-hidden">
+            <div className="w-1/2 h-full border-r border-gray-200 overflow-hidden">
               <CodeEditor
                 language={language}
                 code={code}
-                onChange={handleChange}
+                onChange={onChange}
               />
             </div>
-          ) : (
-            <div className="h-full">
-              {langConfig.previewable ? (
+            <div className="w-1/2 h-full overflow-hidden">
+              {enhancedCanPreview ? (
                 <CodePreview
                   key={previewKey}
                   language={language}
                   code={code}
                 />
               ) : (
-                <div className="h-full flex items-center justify-center">
+                <div className="h-full flex items-center justify-center bg-gray-100">
                   <div className="text-center">
-                    <div className="text-slate-400 mb-2">
-                      <Eye className="w-12 h-12 mx-auto" />
+                    <div className="text-gray-400 mb-2">
+                      <Eye className="w-8 h-8 mx-auto" />
                     </div>
-                    <p className="text-slate-300">Preview not available for {language}</p>
+                    <p className="text-gray-600 text-sm">Preview not available</p>
                   </div>
                 </div>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
-};
+});
+
+FuturisticBottomEditor.displayName = 'FuturisticBottomEditor';
 
 export default FuturisticBottomEditor;
