@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 
 interface CodePreviewProps {
@@ -154,7 +153,7 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
         </html>
       `);
     } else if (language.toLowerCase() === 'javascript' || language.toLowerCase() === 'js') {
-      // Enhanced JavaScript execution environment
+      // Enhanced JavaScript execution environment with calculator HTML
       doc.write(`
         <!DOCTYPE html>
         <html lang="en">
@@ -198,7 +197,7 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
               margin: 15px 0;
               border: 1px solid #e5e7eb;
               box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-              min-height: 100px;
+              min-height: 200px;
             }
             h3 { color: #374151; margin-top: 0; }
             .status { 
@@ -211,6 +210,90 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
             .ready { background: #dcfce7; color: #166534; }
             .running { background: #dbeafe; color: #1d4ed8; }
             .error-status { background: #fecaca; color: #dc2626; }
+            
+            /* Calculator Styles */
+            .calculator {
+              max-width: 300px;
+              margin: 20px auto;
+              background: #2c3e50;
+              border-radius: 15px;
+              padding: 20px;
+              box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            }
+            .display {
+              width: 100%;
+              height: 60px;
+              font-size: 24px;
+              text-align: right;
+              padding: 10px;
+              margin-bottom: 15px;
+              border: none;
+              border-radius: 8px;
+              background: #34495e;
+              color: #ecf0f1;
+              box-sizing: border-box;
+            }
+            .buttons {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 10px;
+            }
+            .btn {
+              height: 50px;
+              border: none;
+              border-radius: 8px;
+              font-size: 18px;
+              font-weight: bold;
+              cursor: pointer;
+              transition: all 0.2s;
+              color: white;
+            }
+            .btn:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            }
+            .btn:active {
+              transform: translateY(0);
+            }
+            .btn.number {
+              background: #3498db;
+            }
+            .btn.operator {
+              background: #e74c3c;
+            }
+            .btn.clear {
+              background: #95a5a6;
+            }
+            .btn.equals {
+              background: #27ae60;
+            }
+            
+            /* Interactive Demo Elements */
+            .demo-section {
+              margin: 20px 0;
+              padding: 15px;
+              border: 1px solid #ddd;
+              border-radius: 8px;
+              background: #f9f9f9;
+            }
+            button.demo-btn {
+              background: #007bff;
+              color: white;
+              border: none;
+              padding: 8px 16px;
+              margin: 5px;
+              border-radius: 4px;
+              cursor: pointer;
+            }
+            button.demo-btn:hover {
+              background: #0056b3;
+            }
+            input.demo-input {
+              padding: 8px;
+              margin: 5px;
+              border: 1px solid #ddd;
+              border-radius: 4px;
+            }
           </style>
         </head>
         <body>
@@ -219,13 +302,50 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
           <div id="console" class="console-output">Initializing JavaScript environment...\n</div>
           
           <div class="dom-content">
-            <h4 style="margin-top: 0;">DOM Manipulation Area</h4>
-            <div id="app"></div>
-            <div id="root"></div>
-            <div id="main"></div>
-            <div id="output"></div>
-            <div id="result"></div>
-            <div id="content"></div>
+            <h4 style="margin-top: 0;">Interactive Elements</h4>
+            
+            <!-- Calculator for JavaScript calculator code -->
+            <div class="calculator">
+              <input type="text" class="display" readonly>
+              <div class="buttons">
+                <button class="btn clear" data-value="C">C</button>
+                <button class="btn operator" data-value="/">/</button>
+                <button class="btn operator" data-value="*">×</button>
+                <button class="btn operator" data-value="-">-</button>
+                
+                <button class="btn number" data-value="7">7</button>
+                <button class="btn number" data-value="8">8</button>
+                <button class="btn number" data-value="9">9</button>
+                <button class="btn operator" data-value="+">+</button>
+                
+                <button class="btn number" data-value="4">4</button>
+                <button class="btn number" data-value="5">5</button>
+                <button class="btn number" data-value="6">6</button>
+                <button class="btn equals" data-value="=" rowspan="2">=</button>
+                
+                <button class="btn number" data-value="1">1</button>
+                <button class="btn number" data-value="2">2</button>
+                <button class="btn number" data-value="3">3</button>
+                
+                <button class="btn number" data-value="0" style="grid-column: span 2;">0</button>
+                <button class="btn number" data-value=".">.</button>
+              </div>
+            </div>
+            
+            <!-- Other interactive elements -->
+            <div class="demo-section">
+              <h5>Demo Elements</h5>
+              <div id="app"></div>
+              <div id="root"></div>
+              <div id="main"></div>
+              <div id="output"></div>
+              <div id="result"></div>
+              <div id="content"></div>
+              <button class="demo-btn" onclick="console.log('Demo button clicked!')">Demo Button</button>
+              <input type="text" class="demo-input" placeholder="Type here..." onchange="console.log('Input changed:', this.value)">
+              <div id="counter">0</div>
+              <button class="demo-btn" onclick="document.getElementById('counter').textContent = parseInt(document.getElementById('counter').textContent) + 1">Increment</button>
+            </div>
           </div>
 
           <script>

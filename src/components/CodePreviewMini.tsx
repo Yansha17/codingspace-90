@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, memo } from 'react';
 
 interface CodePreviewMiniProps {
@@ -128,7 +127,7 @@ const CodePreviewMini: React.FC<CodePreviewMiniProps> = memo(({
         </html>
       `);
     } else if (language.toLowerCase() === 'javascript' || language.toLowerCase() === 'js') {
-      // Enhanced JavaScript mini execution
+      // Enhanced JavaScript mini execution with calculator
       doc.write(`
         <!DOCTYPE html>
         <html lang="en">
@@ -150,17 +149,76 @@ const CodePreviewMini: React.FC<CodePreviewMiniProps> = memo(({
               background: #000; 
               padding: 2px; 
               border-radius: 1px; 
-              height: 100%;
+              height: 50%;
               overflow-y: auto;
+              margin-bottom: 2px;
             }
-            .line { margin: 0; font-size: 8px; }
+            .interactive { 
+              height: 50%;
+              background: #2a2a2a; 
+              padding: 2px;
+              border-radius: 1px;
+              overflow: hidden;
+            }
+            .line { margin: 0; font-size: 7px; }
             .error { color: #ff6b6b; }
             .warn { color: #feca57; }
             .info { color: #48cae4; }
+            
+            /* Mini Calculator */
+            .calc {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 1px;
+              height: 100%;
+              font-size: 6px;
+            }
+            .calc-display {
+              grid-column: span 4;
+              background: #333;
+              color: #0f0;
+              text-align: right;
+              padding: 1px;
+              font-size: 7px;
+              border: none;
+            }
+            .calc-btn {
+              background: #444;
+              color: #fff;
+              border: none;
+              font-size: 6px;
+              cursor: pointer;
+              padding: 1px;
+            }
+            .calc-btn:hover { background: #555; }
+            .calc-btn.op { background: #666; }
+            .calc-btn.eq { background: #4a4; }
+            .calc-btn.clear { background: #a44; }
           </style>
         </head>
         <body>
           <div id="output" class="output">Running...</div>
+          <div class="interactive">
+            <div class="calc">
+              <input class="calc-display display" readonly>
+              <button class="calc-btn clear" data-value="C">C</button>
+              <button class="calc-btn op" data-value="/">/</button>
+              <button class="calc-btn op" data-value="*">×</button>
+              <button class="calc-btn op" data-value="-">-</button>
+              <button class="calc-btn btn" data-value="7">7</button>
+              <button class="calc-btn btn" data-value="8">8</button>
+              <button class="calc-btn btn" data-value="9">9</button>
+              <button class="calc-btn op" data-value="+">+</button>
+              <button class="calc-btn btn" data-value="4">4</button>
+              <button class="calc-btn btn" data-value="5">5</button>
+              <button class="calc-btn btn" data-value="6">6</button>
+              <button class="calc-btn eq" data-value="=">=</button>
+              <button class="calc-btn btn" data-value="1">1</button>
+              <button class="calc-btn btn" data-value="2">2</button>
+              <button class="calc-btn btn" data-value="3">3</button>
+              <button class="calc-btn btn" data-value="0">0</button>
+            </div>
+          </div>
           <script>
             const output = document.getElementById('output');
             output.innerHTML = '';
