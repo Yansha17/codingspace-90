@@ -13,6 +13,7 @@ const CodeEditor: React.FC<CodeEditorProps> = memo(({ language, code, onChange }
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [lineNumbers, setLineNumbers] = useState<number[]>([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [localCode, setLocalCode] = useState(code);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -24,16 +25,22 @@ const CodeEditor: React.FC<CodeEditorProps> = memo(({ language, code, onChange }
   }, []);
 
   useEffect(() => {
-    const lines = code.split('\n');
-    setLineNumbers(Array.from({ length: lines.length }, (_, i) => i + 1));
+    setLocalCode(code);
   }, [code]);
+
+  useEffect(() => {
+    const lines = localCode.split('\n');
+    setLineNumbers(Array.from({ length: lines.length }, (_, i) => i + 1));
+  }, [localCode]);
 
   const debouncedOnChange = useDebouncedCallback((newCode: string) => {
     onChange(newCode);
   }, 100, [onChange]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    debouncedOnChange(e.target.value);
+    const newCode = e.target.value;
+    setLocalCode(newCode);
+    debouncedOnChange(newCode);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -43,7 +50,8 @@ const CodeEditor: React.FC<CodeEditorProps> = memo(({ language, code, onChange }
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
       
-      const newValue = code.substring(0, start) + '  ' + code.substring(end);
+      const newValue = localCode.substring(0, start) + '  ' + localCode.substring(end);
+      setLocalCode(newValue);
       onChange(newValue);
       
       setTimeout(() => {
@@ -68,7 +76,7 @@ const CodeEditor: React.FC<CodeEditorProps> = memo(({ language, code, onChange }
       {/* Code Textarea */}
       <textarea
         ref={textareaRef}
-        value={code}
+        value={localCode}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         placeholder={getLanguageComment(language)}

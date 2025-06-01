@@ -65,18 +65,18 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
 
   const langConfig = getLanguageConfig(title);
 
-  // Auto-save functionality
+  // Auto-save functionality with improved debouncing
   useAutoSave({
     value: localCode,
     onSave: (newCode) => {
-      if (onCodeChange) {
+      if (onCodeChange && newCode !== code) {
         onCodeChange(newCode);
       }
     },
-    delay: 300
+    delay: 150
   });
 
-  // Ultra-smooth drag system with improved responsiveness
+  // Ultra-smooth drag system
   const {
     elementRef,
     isDragging,
@@ -122,7 +122,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
     setLocalCode(newCode);
   }, []);
 
-  // Simplified header interaction - directly use startDrag
+  // Enhanced header interaction
   const handleHeaderInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const target = e.target as HTMLElement;
     
@@ -134,17 +134,14 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
                                 target.closest('[data-resize-handle]');
     
     if (isInteractiveElement) {
-      console.log('Header interaction blocked - interactive element');
       return;
     }
 
     // Start drag for any other interaction with the header
-    console.log('Starting widget drag from header');
     startDrag(e);
   }, [startDrag]);
 
   const handleTogglePreview = useCallback(() => {
-    console.log('Toggle preview called');
     if (onTogglePreview) {
       onTogglePreview();
     } else {
@@ -175,11 +172,19 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
   }, [isMaximized, size, position, onResize, onPositionChange, previousSize, previousPosition]);
 
   const handleRun = useCallback(() => {
-    console.log(`Running ${langName} code:`, code);
-    if (langConfig.previewable) {
-      handleTogglePreview();
+    // For languages with preview capability, toggle to preview mode
+    if (langConfig.previewable || ['html', 'css', 'javascript', 'js'].includes(title.toLowerCase())) {
+      if (!localShowPreview) {
+        handleTogglePreview();
+      } else {
+        // Refresh preview
+        setLocalPreviewKey(prev => prev + 1);
+      }
+    } else {
+      // For other languages, open the editor
+      handleEdit();
     }
-  }, [langName, code, langConfig.previewable, handleTogglePreview]);
+  }, [title, langConfig.previewable, localShowPreview, handleTogglePreview, handleEdit]);
 
   const handleResize = useCallback((newSize: { width: number; height: number }) => {
     onResize(newSize);
@@ -247,7 +252,7 @@ const MobileWidget: React.FC<MobileWidgetProps> = memo(({
         />
       </div>
 
-      {/* Futuristic Bottom Editor */}
+      {/* Enhanced Bottom Editor */}
       <FuturisticBottomEditor
         isOpen={isEditorOpen}
         onClose={handleCloseEditor}

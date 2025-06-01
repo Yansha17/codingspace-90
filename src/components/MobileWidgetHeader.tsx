@@ -1,6 +1,6 @@
 
 import React, { memo, useCallback } from 'react';
-import { X, Edit3, Eye, Play, EyeOff, Code2 } from 'lucide-react';
+import { X, Edit3, Eye, Play, Code2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getLanguageConfig } from '@/config/languages';
 
@@ -69,7 +69,7 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
       </div>
       
       <div className="flex items-center gap-1">
-        {/* Always show preview toggle for better UX */}
+        {/* Preview Toggle - Available for all languages */}
         <Button
           size="sm"
           variant="ghost"
@@ -78,7 +78,7 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
           className={`h-6 w-6 p-0 rounded-md z-20 relative touch-manipulation transition-all duration-200 ${
             showPreview 
               ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
+              : 'bg-purple-600 hover:bg-purple-700 text-white'
           }`}
           style={{ touchAction: 'manipulation' }}
         >
@@ -89,8 +89,8 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
           )}
         </Button>
         
-        {/* Run Button - Show for runnable languages that aren't previewable */}
-        {langConfig.runnable && !langConfig.previewable && (
+        {/* Run Button - Show for executable languages */}
+        {(langConfig.runnable || langConfig.previewable) && (
           <Button
             size="sm"
             variant="ghost"
