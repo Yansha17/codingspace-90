@@ -1,6 +1,6 @@
 
 import React, { memo, useCallback } from 'react';
-import { X, Edit3, Eye, Play, Code2 } from 'lucide-react';
+import { X, Edit3, Eye, Play, Code2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getLanguageConfig } from '@/config/languages';
 
@@ -56,6 +56,9 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
     onRun();
   }, [onRun]);
 
+  // Determine if language supports live preview
+  const supportsPreview = ['html', 'css', 'javascript', 'js'].includes(title.toLowerCase()) || langConfig.previewable;
+
   return (
     <div className="bg-slate-700/90 backdrop-blur-sm border-b border-slate-600 p-2 flex items-center justify-between">
       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -69,39 +72,45 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
       </div>
       
       <div className="flex items-center gap-1">
-        {/* Preview Toggle - Available for all languages */}
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleTogglePreview}
-          onTouchStart={handleTogglePreview}
-          className={`h-6 w-6 p-0 rounded-md z-20 relative touch-manipulation transition-all duration-200 ${
-            showPreview 
-              ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
-              : 'bg-purple-600 hover:bg-purple-700 text-white'
-          }`}
-          style={{ touchAction: 'manipulation' }}
-        >
-          {showPreview ? (
-            <Eye className="w-3 h-3" />
-          ) : (
-            <Code2 className="w-3 h-3" />
-          )}
-        </Button>
-        
-        {/* Run Button - Show for executable languages */}
-        {(langConfig.runnable || langConfig.previewable) && (
+        {/* Preview Toggle - Available for supported languages */}
+        {supportsPreview && (
           <Button
             size="sm"
             variant="ghost"
-            onClick={handleRun}
-            onTouchStart={handleRun}
-            className="h-6 w-6 p-0 bg-green-600 hover:bg-green-700 text-white rounded-md z-20 relative touch-manipulation transition-all duration-200"
+            onClick={handleTogglePreview}
+            onTouchStart={handleTogglePreview}
+            className={`h-6 w-6 p-0 rounded-md z-20 relative touch-manipulation transition-all duration-200 ${
+              showPreview 
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                : 'bg-purple-600 hover:bg-purple-700 text-white'
+            }`}
             style={{ touchAction: 'manipulation' }}
+            title={showPreview ? 'Show code' : 'Show preview'}
           >
-            <Play className="w-3 h-3" />
+            {showPreview ? (
+              <Code2 className="w-3 h-3" />
+            ) : (
+              <Eye className="w-3 h-3" />
+            )}
           </Button>
         )}
+        
+        {/* Run/Refresh Button */}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={handleRun}
+          onTouchStart={handleRun}
+          className="h-6 w-6 p-0 bg-green-600 hover:bg-green-700 text-white rounded-md z-20 relative touch-manipulation transition-all duration-200"
+          style={{ touchAction: 'manipulation' }}
+          title={showPreview && supportsPreview ? 'Refresh preview' : (supportsPreview ? 'Run code' : 'Edit code')}
+        >
+          {showPreview && supportsPreview ? (
+            <RefreshCw className="w-3 h-3" />
+          ) : (
+            <Play className="w-3 h-3" />
+          )}
+        </Button>
         
         {/* Edit Button */}
         <Button
@@ -111,6 +120,7 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
           onTouchStart={handleEdit}
           className="h-6 w-6 p-0 bg-blue-600 hover:bg-blue-700 text-white rounded-md z-20 relative touch-manipulation transition-all duration-200"
           style={{ touchAction: 'manipulation' }}
+          title="Edit code"
         >
           <Edit3 className="w-3 h-3" />
         </Button>
@@ -122,6 +132,7 @@ const MobileWidgetHeader: React.FC<MobileWidgetHeaderProps> = memo(({
           onClick={handleDelete}
           onTouchStart={handleDelete}
           className="h-6 w-6 p-0 bg-red-600 hover:bg-red-700 text-white rounded-md z-20 relative touch-manipulation transition-all duration-200"
+          title="Delete widget"
         >
           <X className="w-3 h-3" />
         </Button>

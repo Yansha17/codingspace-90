@@ -21,13 +21,13 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
     doc.open();
     
     if (language.toLowerCase() === 'html') {
-      // For HTML, render the code directly with proper DOCTYPE and viewport
+      // For HTML, render the code directly with proper interactive capabilities
       const htmlContent = code.trim();
       if (htmlContent.toLowerCase().includes('<!doctype html') || htmlContent.toLowerCase().includes('<html')) {
         // Full HTML document
         doc.write(htmlContent);
       } else {
-        // HTML fragment - wrap it properly
+        // HTML fragment - wrap it properly with interactive support
         doc.write(`
           <!DOCTYPE html>
           <html lang="en">
@@ -42,6 +42,24 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
                 padding: 20px; 
                 line-height: 1.6;
               }
+              * { box-sizing: border-box; }
+              button {
+                cursor: pointer;
+                border: 1px solid #ddd;
+                background: #f8f9fa;
+                padding: 8px 16px;
+                border-radius: 4px;
+                margin: 4px;
+              }
+              button:hover {
+                background: #e9ecef;
+              }
+              input, select, textarea {
+                border: 1px solid #ddd;
+                padding: 8px;
+                margin: 4px;
+                border-radius: 4px;
+              }
             </style>
           </head>
           <body>
@@ -51,7 +69,7 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
         `);
       }
     } else if (language.toLowerCase() === 'css') {
-      // For CSS, create a demo page with the styles applied
+      // Enhanced CSS preview with more diverse elements
       doc.write(`
         <!DOCTYPE html>
         <html lang="en">
@@ -67,35 +85,76 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
               line-height: 1.6;
               background: #f8f9fa;
             }
+            /* Default styling for demo elements */
+            .demo-section { margin: 20px 0; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .demo-section h3 { margin-top: 0; color: #333; }
             /* User CSS */
             ${code}
           </style>
         </head>
         <body>
-          <div class="preview-container">
-            <h1>CSS Preview</h1>
-            <p class="text">This is a sample paragraph to demonstrate your CSS styling.</p>
-            <button class="btn button">Sample Button</button>
-            <div class="box sample-box" style="width: 100px; height: 100px; background: #e9ecef; margin: 15px 0; border: 1px solid #ddd; display: inline-block;">Box</div>
-            <ul class="list">
-              <li>List item 1</li>
-              <li>List item 2</li>
-              <li>List item 3</li>
-            </ul>
-            <div class="container card">
-              <h3>Container Element</h3>
-              <p class="content">This is content inside a container div that you can style.</p>
+          <div class="demo-section">
+            <h3>Text Elements</h3>
+            <h1 class="heading title">Main Heading</h1>
+            <h2 class="subheading">Subheading</h2>
+            <p class="text content">This is a sample paragraph to demonstrate your CSS styling. You can style this text with classes like .text, .content, or p selector.</p>
+            <p class="description">Another paragraph with different content for styling variety.</p>
+            <a href="#" class="link">Sample Link</a>
+          </div>
+
+          <div class="demo-section">
+            <h3>Interactive Elements</h3>
+            <button class="btn button primary">Primary Button</button>
+            <button class="btn button secondary">Secondary Button</button>
+            <input type="text" class="input" placeholder="Text input field" />
+            <select class="select dropdown">
+              <option>Option 1</option>
+              <option>Option 2</option>
+              <option>Option 3</option>
+            </select>
+          </div>
+
+          <div class="demo-section">
+            <h3>Layout Elements</h3>
+            <div class="container box card">
+              <h4 class="card-title">Card Title</h4>
+              <p class="card-content">This is content inside a container that you can style with classes like .container, .box, .card</p>
             </div>
+            <div class="flex-container">
+              <div class="item flex-item">Flex Item 1</div>
+              <div class="item flex-item">Flex Item 2</div>
+              <div class="item flex-item">Flex Item 3</div>
+            </div>
+          </div>
+
+          <div class="demo-section">
+            <h3>Lists and Navigation</h3>
+            <ul class="list nav-list">
+              <li class="list-item nav-item"><a href="#" class="nav-link">Home</a></li>
+              <li class="list-item nav-item"><a href="#" class="nav-link">About</a></li>
+              <li class="list-item nav-item"><a href="#" class="nav-link">Contact</a></li>
+            </ul>
+          </div>
+
+          <div class="demo-section">
+            <h3>Form Elements</h3>
             <form class="form">
-              <input type="text" class="input" placeholder="Sample input field" style="margin: 5px; padding: 8px;">
-              <textarea class="textarea" placeholder="Sample textarea" style="margin: 5px; padding: 8px; width: 200px; height: 60px;"></textarea>
+              <div class="form-group">
+                <label class="label">Name:</label>
+                <input type="text" class="input form-input" placeholder="Enter your name" />
+              </div>
+              <div class="form-group">
+                <label class="label">Message:</label>
+                <textarea class="textarea" placeholder="Enter your message" rows="3"></textarea>
+              </div>
+              <button type="submit" class="btn submit-btn">Submit</button>
             </form>
           </div>
         </body>
         </html>
       `);
     } else if (language.toLowerCase() === 'javascript' || language.toLowerCase() === 'js') {
-      // For JavaScript, execute the code and show output
+      // Enhanced JavaScript execution environment
       doc.write(`
         <!DOCTYPE html>
         <html lang="en">
@@ -124,6 +183,8 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
               white-space: pre-wrap;
               word-wrap: break-word;
               box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+              max-height: 300px;
+              overflow-y: auto;
             }
             .output-line { margin: 2px 0; }
             .log { color: #4ade80; }
@@ -137,6 +198,7 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
               margin: 15px 0;
               border: 1px solid #e5e7eb;
               box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              min-height: 100px;
             }
             h3 { color: #374151; margin-top: 0; }
             .status { 
@@ -148,6 +210,7 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
             }
             .ready { background: #dcfce7; color: #166534; }
             .running { background: #dbeafe; color: #1d4ed8; }
+            .error-status { background: #fecaca; color: #dc2626; }
           </style>
         </head>
         <body>
@@ -162,6 +225,7 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
             <div id="main"></div>
             <div id="output"></div>
             <div id="result"></div>
+            <div id="content"></div>
           </div>
 
           <script>
@@ -173,11 +237,15 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
             statusDiv.textContent = 'Executing...';
             statusDiv.className = 'status running';
             
-            // Override console methods
-            const originalLog = console.log;
-            const originalError = console.error;
-            const originalWarn = console.warn;
-            const originalInfo = console.info;
+            // Enhanced console override system
+            const originalConsole = {
+              log: console.log,
+              error: console.error,
+              warn: console.warn,
+              info: console.info,
+              dir: console.dir,
+              table: console.table
+            };
             
             function appendToConsole(message, className = 'log') {
               const line = document.createElement('div');
@@ -187,58 +255,106 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
               consoleDiv.scrollTop = consoleDiv.scrollHeight;
             }
             
+            // Override all console methods
             console.log = function(...args) {
-              originalLog.apply(console, args);
-              appendToConsole(args.join(' '), 'log');
+              originalConsole.log.apply(console, args);
+              appendToConsole(args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+              ).join(' '), 'log');
             };
             
             console.error = function(...args) {
-              originalError.apply(console, args);
-              appendToConsole('ERROR: ' + args.join(' '), 'error');
+              originalConsole.error.apply(console, args);
+              appendToConsole('ERROR: ' + args.map(arg => String(arg)).join(' '), 'error');
             };
             
             console.warn = function(...args) {
-              originalWarn.apply(console, args);
-              appendToConsole('WARNING: ' + args.join(' '), 'warn');
+              originalConsole.warn.apply(console, args);
+              appendToConsole('WARNING: ' + args.map(arg => String(arg)).join(' '), 'warn');
             };
             
             console.info = function(...args) {
-              originalInfo.apply(console, args);
-              appendToConsole('INFO: ' + args.join(' '), 'info');
+              originalConsole.info.apply(console, args);
+              appendToConsole('INFO: ' + args.map(arg => String(arg)).join(' '), 'info');
             };
             
-            // Add some helpful functions
-            function display(content) {
-              const output = document.getElementById('output') || document.getElementById('app');
-              if (output) {
+            console.dir = function(obj) {
+              originalConsole.dir.apply(console, arguments);
+              try {
+                appendToConsole(JSON.stringify(obj, null, 2), 'info');
+              } catch(e) {
+                appendToConsole(String(obj), 'info');
+              }
+            };
+            
+            console.table = function(data) {
+              originalConsole.table.apply(console, arguments);
+              try {
+                appendToConsole('TABLE: ' + JSON.stringify(data, null, 2), 'info');
+              } catch(e) {
+                appendToConsole('TABLE: ' + String(data), 'info');
+              }
+            };
+            
+            // Helper functions for DOM manipulation
+            function display(content, elementId = 'output') {
+              const element = document.getElementById(elementId);
+              if (element) {
                 if (typeof content === 'object') {
-                  output.innerHTML = '<pre>' + JSON.stringify(content, null, 2) + '</pre>';
+                  element.innerHTML = '<pre>' + JSON.stringify(content, null, 2) + '</pre>';
                 } else {
-                  output.innerHTML = content;
+                  element.innerHTML = content;
                 }
               }
             }
             
-            // Make display function available globally
-            window.display = display;
-            
-            try {
-              // Execute user code
-              ${code || 'console.log("No JavaScript code provided");'}
-              
-              statusDiv.textContent = 'Execution completed';
-              statusDiv.className = 'status ready';
-              
-              if (consoleDiv.innerHTML.trim() === '') {
-                appendToConsole('Code executed successfully (no output)', 'info');
-              }
-              
-            } catch (error) {
-              console.error(error.message);
-              statusDiv.textContent = 'Execution failed';
-              statusDiv.className = 'status error';
-              console.error('Stack trace: ' + error.stack);
+            function createElement(tag, attributes = {}, content = '') {
+              const element = document.createElement(tag);
+              Object.keys(attributes).forEach(key => {
+                element.setAttribute(key, attributes[key]);
+              });
+              element.innerHTML = content;
+              return element;
             }
+            
+            function appendElement(parentId, element) {
+              const parent = document.getElementById(parentId);
+              if (parent && element) {
+                parent.appendChild(element);
+              }
+            }
+            
+            // Make helper functions available globally
+            window.display = display;
+            window.createElement = createElement;
+            window.appendElement = appendElement;
+            
+            // Enhanced async support
+            const executeCode = async () => {
+              try {
+                // Execute user code with async support
+                const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+                const userCode = \`${code || 'console.log("No JavaScript code provided");'}\`;
+                
+                const asyncWrapper = new AsyncFunction(userCode);
+                await asyncWrapper();
+                
+                statusDiv.textContent = 'Execution completed';
+                statusDiv.className = 'status ready';
+                
+                if (consoleDiv.innerHTML.trim() === '') {
+                  appendToConsole('Code executed successfully (no output)', 'info');
+                }
+                
+              } catch (error) {
+                console.error(error.message);
+                statusDiv.textContent = 'Execution failed';
+                statusDiv.className = 'status error-status';
+                console.error('Error details: ' + error.stack);
+              }
+            };
+            
+            executeCode();
           </script>
         </body>
         </html>
@@ -414,7 +530,7 @@ const CodePreview: React.FC<CodePreviewProps> = ({ language, code }) => {
         <iframe
           ref={iframeRef}
           className="w-full h-full border-0"
-          sandbox="allow-scripts allow-same-origin allow-forms"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
           title="Code Preview"
         />
       </div>
